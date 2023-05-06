@@ -1,0 +1,27 @@
+{
+  "name": "kastchensystem-server",
+  "version": "2.0.0",
+  "description": "Server für digitales Kästchensystem",
+  "main": "server.ts",
+  "scripts": {
+    "start": "ts-node server.ts",
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Digitales-Kastchensystem/Server.git"
+  },
+  "author": "Maxim Dikov",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/Digitales-Kastchensystem/Server/issues"
+  },
+  "homepage": "https://github.com/Digitales-Kastchensystem/Server#readme",
+  "dependencies": {
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.1.0"
+  }
+}
