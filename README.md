@@ -22,9 +22,9 @@ Zusammenfassend bietet diese Repository eine Möglichkeit für Schulen, ihre eig
 ## Installation aus Quellcode
 Die Installation des Kästchensystem-Servers verlangt das Herunterladen und das Compilieren des Quellcodes für die jeweilige Plattform.
 
-:::warning
-**Achting:** Für produktive Umgebungen wird empfohlen, die [Docker-Installation](#Installation-mit-Docker) zu verwenden. Die Version aus Quellcode kann instabil sein!
-:::
+> **Warning**
+> Für produktive Umgebungen wird empfohlen, die [Docker-Installation](#Installation-mit-Docker) zu verwenden. Die Version aus Quellcode kann instabil sein!
+
 
 Die Installation besteht aus folgenden Schritten:
 
