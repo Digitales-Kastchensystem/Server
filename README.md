@@ -34,7 +34,7 @@ Die Installation besteht aus folgenden Schritten:
     - [Datenbankkonfiguration](#Datenbankkonfiguration)
     - [Schuldaten](#Schuldaten)
     - [Sicherheit](#Sicherheit)
-    - [Logging](#Logging)
+    - [Logging](#Log-Konfiguration)
 4. [Starten des Servers](#Starten-des-Servers)
 
 
@@ -47,12 +47,12 @@ Die Installation besteht aus folgenden Schritten:
 Es ist empfehlenswert, den Server auf einem Linux-Server zu installieren. Die Installation auf einem Windows-Server ist ebenfalls möglich, jedoch nicht getestet und auf eigene Gefahr.
 
 
-#### Schritt 1: Herunterladen des Quellcodes
+#### Herunterladen des Quellcodes
 ```bash
 git clone https://github.com/Digitales-Kastchensystem/Server.git
 ```
 
-#### Schritt 2: Compilieren des Quellcodes
+#### Compilieren des Quellcodes
 1. Installation der Abhängigkeiten
 ```bash
 npm install
@@ -65,13 +65,13 @@ npm run build
 
 Die Kompilierte Anwendung befindet sich im Ordner `./dist`.
 
-### Schritt 3: Konfigurieren des Servers
+### Konfigurieren des Servers
 Öffnen Sie die Datei `./dist/config.cfg` in einem Texteditor. Und passen Sie die Konfiguration an Ihre Bedürfnisse an.
 Mehr zu den einzelnen Konfigurationsoptionen finden Sie in der [Konfigurationsdokumentation](#Konfigurieren).
 
 
 
-### Schritt 4: Starten des Servers
+### Starten des Servers
 ```bash 
 bash ./dist/start.sh
 ```
@@ -103,7 +103,7 @@ Die Konfigurationsdatei `config.cfg` enthält Einstellungen für das System für
 ### Schuldaten
 
 - `school_name`: Der Name der Schule.
-- `school_web_name`: Der Name der Schule, wie er auf der Website angezeigt wird. Der Text innerhalb von `<b>`-Tags wird fett hervorgehoben.
+- `school_web_name`: Der Name der Schule, wie er auf der Website angezeigt wird. (Kann HTML-Code enthalten)
 - `school_web_url`: Die URL der Schulwebsite.
 - `school_logo`: Der relative Pfad zum Schullogo.
 
