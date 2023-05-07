@@ -3,7 +3,7 @@ import Surreal from "surrealdb.js";
 
 export namespace Database {
 
-    const db = new Surreal("http://127.0.0.1:8000/rpc");
+    let db: Surreal;
 
     let TimeUnitsPerDay = 10;
     
@@ -35,9 +35,9 @@ export namespace Database {
 
     }
 
-    export async function Connect(username: string, password: string){
+    export async function Connect(ip: string, port: number, username: string, password: string){
         try {
-            // Signin as a namespace, database, or root user
+            db = new Surreal("http://" + ip + ":" + port+"/rpc");
             await db.signin({
                 user: username,
                 pass: password
