@@ -19,16 +19,17 @@ Das Kästchensystem sammelt und speichert Schülerdaten auf dem Schulserver, um 
 
 Zusammenfassend bietet diese Repository eine Möglichkeit für Schulen, ihre eigene Instanz des Kästchensystems zu installieren und zu verwalten. Der Quellcode ist leicht zu verstehen und anpassbar. Die Datenschutzbestimmungen werden eingehalten, indem Schülerdaten auf dem Schulserver gespeichert werden.
 
-## Installation
+## Installation aus Quellcode
 Die Installation des Kästchensystem-Servers verlangt das Herunterladen und das Compilieren des Quellcodes für die jeweilige Plattform.
+
+**Achting:** Für produktive Umgebungen wird empfohlen, die [Docker-Installation](#Installation-mit-Docker) zu verwenden. Die Version aus Quellcode kann instabil sein!
+
 
 Die Installation besteht aus folgenden Schritten:
 
 1. [Herunterladen des Quellcodes](#Herunterladen-des-Quellcodes)
     - [Clonen des Quellcodes](#Clonen-des-Quellcodes)
 2. [Compilieren des Quellcodes](#Compilieren-des-Quellcodes)
-    - [Installation der Abhängigkeiten](#Installation-der-Abhängigkeiten)
-    - [Kompilieren des Quellcodes](#Kompilieren-des-Quellcodes)
 3. [Konfigurieren des Servers](#Konfigurieren-des-Servers)
     - [Allgemeine Serverkonfiguration](#Allgemeine-Serverkonfiguration)
     - [Datenbankkonfiguration](#Datenbankkonfiguration)
@@ -47,7 +48,7 @@ Die Installation besteht aus folgenden Schritten:
 Es ist empfehlenswert, den Server auf einem Linux-Server zu installieren. Die Installation auf einem Windows-Server ist ebenfalls möglich, jedoch nicht getestet und auf eigene Gefahr.
 
 
-#### Herunterladen des Quellcodes
+#### Clonen des Quellcodes
 ```bash
 git clone https://github.com/Digitales-Kastchensystem/Server.git
 ```
