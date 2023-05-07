@@ -7,6 +7,7 @@ import Surreal from "surrealdb.js";
 import *  as Core from "./Database";
 import { loadConfig, Config } from "./Config";
 import { router } from './Router';
+import { Log } from './Log';
 
 const app = express();
 app.use(cors());
@@ -21,23 +22,23 @@ if (process.argv.length > 2) {
 }
 
 if (!fs.existsSync(config_file)) {
-    console.error('Config file not found!');
+    Log(`Config file ${config_file} does not exist!`, 'ERROR');
     process.exit(1);
 }
 
 if(!loadConfig(config_file)) {
-    console.error('Error loading config file!');
+    Log(`Error loading config file ${config_file}!`, 'ERROR');
     process.exit(1);
 }
 
 
 Core.Database.Connect(Config.db.host, Config.db.port, Config.db.username, Config.db.password).then((db) => {
-    console.log('Connected to database!');
+    Log('Connected to database!');
     app.listen(Config.port, Config.interface, () => {
-        console.log(`Server listening on ${Config.interface}:${Config.port}`);
+        Log(`Listening on ${Config.interface}:${Config.port}`); 
     });
 }).catch((err) => {
-    console.error('Error connecting to database!');
+    Log('Error connecting to database!', 'ERROR');
     console.error(err);
     process.exit(1);
 });

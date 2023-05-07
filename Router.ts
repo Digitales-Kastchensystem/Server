@@ -3,9 +3,8 @@ import { Router, Request, Response } from 'express';
 export const router = Router();
 
 import {Config } from "./Config";
-
-export let ServerConfig = Config;
+import { Log } from './Log';
 
 router.get('/', (req, res) => {
-    res.json(ServerConfig);
+    res.json(Config);
 });
