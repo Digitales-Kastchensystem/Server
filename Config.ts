@@ -82,3 +82,13 @@ export function loadConfig(filename: string) {
         return false;
     }
 }
+
+export function SerializeSchoolPerview() {
+    return {
+        title: Config.school.title,
+        html_title: Config.school.html_title,
+        url: Config.school.url,
+        school_logo: Config.school.school_logo,
+        admin_email: Config.school.admin_email
+    };
+}

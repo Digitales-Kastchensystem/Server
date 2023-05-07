@@ -14,3 +14,7 @@ export function Log(message: string, level: string = 'INFO') {
 
     console.log(logformat);
 }
+
+export function ApiLog(request: string, ip: string){
+    Log(`API Request: ${request} from ${ip}`);
+}
