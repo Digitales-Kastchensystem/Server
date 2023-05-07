@@ -10,9 +10,7 @@ app.use(cors());
 app.use(bodyParser.json());
 
 import *  as Core from "./Database";
+import { router } from './Router';
 
-Core.Database.Connect("root", "root").then(() => {
-    app.listen(3000, () => {
-        console.log("Server running on port 3000");
-    });
-});
+app.use('/', router);
+
