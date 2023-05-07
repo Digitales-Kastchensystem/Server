@@ -23,18 +23,20 @@ Zusammenfassend bietet diese Repository eine Möglichkeit für Schulen, ihre eig
 Die Installation des Kästchensystem-Servers verlangt das Herunterladen und das Compilieren des Quellcodes für die jeweilige Plattform.
 
 Die Installation besteht aus folgenden Schritten:
-1. [Herunterladen des Quellcodes] (#Herunterladen des Quellcodes)
-    - [Clonen des Quellcodes] (#Clonen des Quellcodes)
-2. [Compilieren des Quellcodes] (#Compilieren des Quellcodes)
-    - [Installation der Abhängigkeiten] (#Installation der Abhängigkeiten)
-    - [Kompilieren des Quellcodes] (#Kompilieren des Quellcodes)
-3. [Konfigurieren des Servers] (#Konfigurieren des Servers)
-    - [Allgemeine Serverkonfiguration] (#Allgemeine Serverkonfiguration)
-    - [Datenbankkonfiguration] (#Datenbankkonfiguration)
-    - [Schuldaten] (#Schuldaten)
-    - [Sicherheit] (#Sicherheit)
-    - [Logging] (#Logging)
-4. [Starten des Servers] (#Starten des Servers)
+
+1. [Herunterladen des Quellcodes](#Herunterladen-des-Quellcodes)
+    - [Clonen des Quellcodes](#Clonen-des-Quellcodes)
+2. [Compilieren des Quellcodes](#Compilieren-des-Quellcodes)
+    - [Installation der Abhängigkeiten](#Installation-der-Abhängigkeiten)
+    - [Kompilieren des Quellcodes](#Kompilieren-des-Quellcodes)
+3. [Konfigurieren des Servers](#Konfigurieren-des-Servers)
+    - [Allgemeine Serverkonfiguration](#Allgemeine-Serverkonfiguration)
+    - [Datenbankkonfiguration](#Datenbankkonfiguration)
+    - [Schuldaten](#Schuldaten)
+    - [Sicherheit](#Sicherheit)
+    - [Logging](#Logging)
+4. [Starten des Servers](#Starten-des-Servers)
+
 
 ### Voraussetzungen
 - [Node.js](https://nodejs.org/en/) (Version 18.0.0 oder höher)
