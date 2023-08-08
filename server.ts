@@ -32,8 +32,9 @@ if(!loadConfig(config_file)) {
 }
 
 
-Core.Database.Connect(Config.db.host, Config.db.port, Config.db.username, Config.db.password).then((db) => {
+Core.Database.Connect(Config.db.host, Config.db.port, Config.db.username, Config.db.password, Config.db.database).then((db) => {
     Log('Connected to database!');
+    Core.Database.Connection = db;
     app.listen(Config.port, Config.interface, () => {
         Log(`Listening on ${Config.interface}:${Config.port}`); 
     });

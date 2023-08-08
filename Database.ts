@@ -1,10 +1,12 @@
-import Surreal from "surrealdb.js";
+//import mysql 
+import * as mysql from 'mysql';
+import { ApiLog, Log } from './Log';
 
 
 export namespace Database {
 
-    let db: Surreal;
 
+    export let Connection:any = null;
     let TimeUnitsPerDay = 10;
     
     export namespace Routine {
@@ -14,9 +16,10 @@ export namespace Database {
          * @param {string} error - The first number.
          * @returns {object} Error object.
          */
-        export function MkError(err: string){
+        export function MkError(err: string, code: number = -1){
             return {
                 error: err,
+                code: code,
             };
         }
 
@@ -35,668 +38,503 @@ export namespace Database {
 
     }
 
-    export async function Connect(ip: string, port: number, username: string, password: string){
-        try {
-            db = new Surreal("http://" + ip + ":" + port+"/rpc");
-            await db.signin({
-                user: username,
-                pass: password
+    export async function Connect(ip:string, port:number, user:string, pass:string, db:string) {
+        return new Promise((resolve, reject) => {
+            const connection = mysql.createConnection({
+                host: ip,
+                port: port,
+                user: user,
+                password: pass,
+                database: db,
             });
-        } catch (err) {
-            console.log(err);
-            return Routine.MkError("Could not connect to database.");
-        }
-    }    
-
-
-    export namespace Get{
-
-        /**
-         * Gets all the users in the database.
-         *  
-         * @returns {array[object]} Users object.
-         * */
-        export async function Users(){
-            const users = await db.select("users");
-            return users;
-        }
-
-
-        /**
-         * Gets all the classes in the database.
-         * 
-         * @returns {array[object]} Classes object.
-         * */
-        export async function Classes(){
-            const classes = await db.select("classes");
-            return classes;
-        }
-
-        /**
-         * Gets all the timetables in the database.
-         *  
-         * @returns {array[object]} Timetables object.
-         * */
-        export async function TimeTables(){
-            const timeTables = await db.select("timetables");
-            return timeTables;
-        }
-
-    }
-
-    export namespace Request{
-
-        export async function Class(classname: string){
-            const classes = await db.select("classes:" + classname);
-            return classes;
-        }
-
-        export async function User(username: string){
-            const users = await db.select("users:" + username);
-            return users;
-        }
-
-        export async function GetUserClass(username: string){
-            const user = await User(username);
-            const classname = user.class;
-            const classes = await Class(classname);
-            return classes;
-        }
-
-        export async function ClassStudents(classname: string){
-            const classes = await Class(classname);
-            const students = classes.students;
-            return students;
-        }
-
-        export async function ClassHeadTeacher(classname: string){
-            const classes = await Class(classname);
-            const headteacher = classes.headteacher;
-            return headteacher;
-        }
-
-        export async function ClassTeachers(classname: string){
-            const teachers: any[] = await Query("SELECT * users WHERE class = $1 AND type = $2", [classname, "teacher"]);
-            var teacherUsernames: string[] = [];
-            for (let i = 0; i < teachers.length; i++){
-                teacherUsernames.push(teachers[i].username);
-            }
-            return teacherUsernames;
-        }
-
-        export async function Timetable(username: string){
-            const timetable = await db.select("timetables:" + username);
-            return timetable;
-        }
-
-        export async function UserTimetable(username: string){
-            const user = await User(username);
-            const timetable = await Timetable(user.timetable);
-            return timetable;
-        }
-
-        export async function Query(query: string, args: any){
-            const result = await db.query(query, args);
-            return result;
-        }
-    }
-
-    export namespace Classes{
-
-        export namespace Get{
-                
-                export async function Students(classname: string){
-                    const students = await Request.ClassStudents(classname);
-                    return students;
-                }
-    
-                export async function HeadTeacher(classname: string){
-                    const headteacher = await Request.ClassHeadTeacher(classname);
-                    return headteacher;
-                }
-    
-                export async function Teachers(classname: string){
-                    const teachers = await Request.ClassTeachers(classname);
-                    return teachers;
-                }
-
-                export async function Class(classname: string){
-                    const classes = await Request.Class(classname);
-                    return classes;
-                }
-        }
-
-        export namespace Set{
-            export async function HeadTeacher(classname: string, headteacher: string){
-                if (headteacher == ""){
-                    //set relation from class to headteacher to null
-                    await db.change('classes:' + classname, {
-                        headteacher: null,
-                    });
+            connection.connect((err:any) => {
+                if (err) {
+                    reject(err);
                 } else {
-                    //set relation from class to headteacher
-                    await db.change('classes:' + classname, {
-                        headteacher: headteacher,
-                    });
-                    //set headteacher class to classname
-                    User.Set.Class(headteacher, classname);
+                    resolve(connection);
                 }
-            }
-
-            export async function SetClassStudents(classname: string, students: string[]){
-                //set relation from class to students
-                await db.change('classes:' + classname, {
-                    students: students,
-                });
-                //set students class to classname
-                for (let i = 0; i < students.length; i++){
-                    User.Set.Class(students[i], classname);
-                }
-            }
-
-            export async function SetClassEdit(classname: string, edit: boolean){
-                let students = await Get.Students(classname);
-                for (let i = 0; i < students.length; i++){
-                    User.Set.Edit(students[i], edit);
-                }
-            }
-
-            export async function SetClassRules(classname: string, wpfs: number, studien: number, ausgange: number){
-                let students = await Get.Students(classname);
-                //loop through all students and if they have custom rules disabled, set them
-                for (let i = 0; i < students.length; i++){
-                    let student = await Request.User(students[i]);
-                    if (!student.CustomRules){
-                        User.Set.CustomRules(students[i], wpfs, studien, ausgange);
-                    }
-                }
-            }            
-        }
-
-        export async function Create(classname: string, headteacher: string, WPFs: number, Studien: number, Ausgange: number){
-            let record = await db.create('classes:' + classname, {
-                Classname: classname,
-        
-                WPFs: WPFs,
-                Studien: Studien,
-                Ausgange: Ausgange,
-        
-                EditMode: false,
             });
-        
-            //set relation from class to headteacher
-            await Set.HeadTeacher(classname, headteacher);
-        
-            //create array of students
-            let students: string[] = [];
-            //set relation from class to students
-            await Set.SetClassStudents(classname, students);
-        }
-
-        export async function DeleteClass(classname: string){
-            await db.delete('classes:' + classname);
-        }
-
-        export async function AddClassStudent(classname: string, student: string){
-            console.log("AddClassStudent: " + classname + " " + student);
-            //get class
-            let classrecord = await Get.Class(classname);
-        
-            //get students
-            let students = classrecord.students;
-            //add student to students
-            students.push(student);
-            //set relation from class to students
-            await db.change('classes:' + classname, {
-                students: students,
-            });
-            //set student class to classname
-            User.Set.Class(student, classname);
-        }
-
-        export async function RemoveClassStudent(classname: string, student: string){
-            console.log("RemoveClassStudent: " + classname + " " + student);
-            //get class
-            let classrecord = await Get.Class(classname);
-            //get students
-            let students = classrecord.students;
-            //remove student from students
-            students = students.filter((e: any) => e !== student);
-            //set relation from class to students
-            await db.change('classes:' + classname, {
-                students: students,
-            });
-            //set student class to null
-            User.Set.Class(student, "");
-        }
-
-
+        });
     }
 
-    export namespace Timetable{
-        export namespace Get{
-            async function GetTimetable(username: string){
-                const timetable = await Request.UserTimetable(username);
-                return timetable;
-            }
-        }
-
-        export namespace Set{
-            export async function Timetable(username: string, timetable: string[][]){
-                await db.change('timetables:' + username, {
-                    TimeTable: timetable,
-                });
-            }
-
-            async function Unit(username: string, day: number, unit: number, content: string){
-                const timetable = await Request.UserTimetable(username);
-                timetable.timetable[day][unit] = content;
-                await Timetable(username, timetable.timetable);
-            }
-            
-        }
-
-        //Timetable functions
-        export async function Create(username: string){
-            //get user class
-            const user = await Request.User(username);
-            const uclass = await Request.Class(user.class);
-
-            //create timetable, a 2d array of 5 days and 12 units
-            let timetable: string[][] = [];
-
-            let CustomRules = false;
-
-            let WPFs = uclass.WPFs;
-            let Studien = uclass.Studien;
-            let Ausgange = uclass.Ausgange;
-
-
-            for (let i = 0; i < 5; i++){
-                timetable[i] = [];
-                for (let j = 0; j < 12; j++){
-                    timetable[i][j] = "";
-                }
-            }
-
-            db.create('timetables:' + username, {
-                TimeTable: timetable,
-                CustomRules: CustomRules,
-                WPFs: WPFs,
-                Studien: Studien,
-                Ausgange: Ausgange,
-
-                EditMode: false,
-            });
-
-            //set relation from user to timetable
-            await db.change('users:' + username, {
-                timetable: username,
-            });
-
-            //set relation from timetable to user
-            await db.change('timetables:' + username, {
-                user: username,
-            });
-
-            return timetable;
-        }
-            
-    }
+    //user schema: id	username	email	first_name	last_name	last_change	editable	colorful	type	class	password	token
 
     export namespace User{
 
-        export namespace Get{
-            export async function Timetable(username: string){
-                const timetable = await Request.UserTimetable(username);
-                return timetable;
-            }
+        export async function GetByUsername(username: string) {
+            return new Promise((resolve, reject) => {
+                Connection.query('SELECT * FROM users WHERE username = ?', [username], (err:any, results:any) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        if (results.length == 0) {
+                            resolve(null);
+                        } else {
+                            resolve(results[0]);
+                        }
+                    }
+                });
+            });
         }
 
-        export namespace Set{
-            export async function Timetable(username: string, timetable: string[][]){
-                await db.change('timetables:' + username, {
-                    TimeTable: timetable,
+        //this function returns array of usernames of all users
+        export async function GetAll() {
+            return new Promise((resolve, reject) => {
+                Connection.query('SELECT username FROM users', (err:any, results:any) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        var usernames = [];
+                        for (var i = 0; i < results.length; i++) {
+                            usernames.push(results[i].username);
+                        }
+                        resolve(usernames);
+                    }
                 });
-            }
+            });
+        }
 
-            export async function Edit(username: string, edit: boolean){
-                await db.change('timetables:' + username, {
-                    EditMode: edit,
+
+        export async function GetByToken(token: string) {
+            return new Promise((resolve, reject) => {
+                Connection.query('SELECT * FROM users WHERE token = ?', [token], (err:any, results:any) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        if (results.length == 0) {
+                            resolve(null);
+                        } else {
+                            resolve(results[0]);
+                        }
+                    }
                 });
-            }
+            });
+        }
 
-            export async function CustomRulesEnabled(username: string, customrules: boolean){
-                await db.change('timetables:' + username, {
-                    CustomRules: customrules,
-                });
-            }
-
-            export async function CustomRules(username: string, wpfs: number, studien: number, ausgange: number){
-                //if user has custom rules enabled, set them
-                let user = await Request.User(username);
-                if (!user.CustomRules) return;
-                await db.change('timetables:' + username, {
-                    WPFs: wpfs,
-                    Studien: studien,
-                    Ausgange: ausgange,
-                });
-            }
-
-            export async function Class(username: string, classname: string){
-                if (classname == ""){
-                    //set relation from user to class to null
-                    await db.change('users:' + username, {
-                        class: null,
-                    });
-                } else {
-                    //set relation from user to class
-                    await db.change('users:' + username, {
-                        class: classname,
-                    });
-                }
+        //on creating a user, if user is a student, get the class, create a timetable for him and for timetable ausgange and studien get the class ausgange and studien
+        export async function Create(username: string, email: string, first_name: string, last_name: string, last_change: string, editable: number, colorful: number, type: string, class_title: string, password: string) {
+            if (type == 'student') {
+                var StudentClass = await SchoolClass.GetByTitle(class_title) as any;
+                var StudentTimeTable = await TimeTable.Create(username, JSON.stringify({}), StudentClass.ausgange, StudentClass.studien, 0);
             }
             
-            export async function Password(username: string, password: string){
-                await db.change('users:' + username, {
-                    password: password,
+            return new Promise((resolve, reject) => {
+                Connection.query('INSERT INTO users (username, email, first_name, last_name, last_change, editable, colorful, type, class, password) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [username, email, first_name, last_name, "", editable, colorful, type, class_title, password], (err:any, results:any) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(results.insertId);
+                    }
                 });
-            }
-            
-            export async function Token(username: string, token: string){
-                await db.change('users:' + username, {
-                    token: token,
-                });
-            }
-            
-            export async function Online(username: string, online: boolean){
-                await db.change('users:' + username, {
-                    online: online,
-                });
-            }
-            
-            export async function Type(username: string, type: string){
-                
-                //if user is a student or teacher, check if class is set
-                if (type == "student" || type == "teacher"){
-                    let user = await Request.User(username);
-                    if (user.class == null) return Routine.MkError("Klasse nicht angegeben");
-                }
+            });
+        }
 
-                await db.change('users:' + username, {
-                    type: type,
+        export async function Delete(username: string) {
+            return new Promise((resolve, reject) => {
+                Connection.query('DELETE FROM users WHERE username = ?', [username], (err:any, results:any) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(results);
+                    }
                 });
+            });
+        }
 
-                //if user is now a student, check if timetable is set, if not, create one and set it
-                if (type == "student"){
-                    let user = await Request.User(username);
-                    if (user.timetable == null){
-                        await Database.Timetable.Create(username);
+        //update student information
+        export async function Update(username: string, email: string, first_name: string, last_name: string, last_change: string, editable: string, colorful: string) {
+            return new Promise((resolve, reject) => {
+                Connection.query('UPDATE users SET email = ?, first_name = ?, last_name = ?, last_change = ?, editable = ?, colorful = ? WHERE username = ?', [email, first_name, last_name, last_change, editable, colorful, username], (err:any, results:any) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(results);
                     }
                 }
-            }
-
-            export async function Surname(username: string, surname: string){
-                await db.change('users:' + username, {
-                    surname: surname,
-                });
-            }
-
-            export async function Lastname(username: string, lastname: string){
-                await db.change('users:' + username, {
-                    lastname: lastname,
-                });
-            }
-
+                );
+            });
         }
 
-        export async function Create(username: string, password: string, type: string, surname: string, lastname: string, uclass: string = ""){
-            try {
-                //if user already exists, return error
-                let user = await Request.User(username);
-                if (user != null) return Routine.MkError("Benutzer existiert bereits");
-        
-                //if user is a student or teacher, check if class is set
-                if (type == "student" || type == "teacher"){
-                    if (uclass == "") return Routine.MkError("Klasse nicht angegeben");
+
+        //enable user's timetable sync to 1 or 0
+        export async function EnableSync(username: string, sync: boolean) {
+            return new Promise((resolve, reject) => {
+                Connection.query('UPDATE timetable SET class_sync = ? WHERE owner = ?', [sync, username], (err:any, results:any) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(results);
+                    }
                 }
-        
-        
-                if (type == "student" || type == "teacher"){
-                    let classes = await Request.Class(uclass);
-                    if (classes == null) return Routine.MkError("Klasse existiert nicht");
-                }
-        
-                let record = await db.create('users:' + username, {
-                    Username: username,
-                    Password: password,
-                    Type: type,
-                    Surname: surname,
-                    Lastname: lastname,
-        
-                    Token: "",
-                    Online: false,
-                });
-                
-                Set.Class(uclass, username);
-        
-                if (type == "student"){
-                    Timetable.Create(username);
-                }
-            } catch (error) {
-                console.log(error);
-                return Routine.MkError("Fehler beim Erstellen des Benutzers");
-            }
+                );
+            });
         }
 
-        export async function DeleteUser(username: string){
-            try {
-                //get user
-                let user = await Request.User(username);
-                if (user == null) return Routine.MkError("Benutzer existiert nicht");
-        
-                //if user is a student, delete timetable
-                if (user.type == "student"){
-                    await db.delete('timetables:' + username);
+        //set user's timetable timetable row to json string
+        export async function SetTimeTable(username: string, timetable: object) {
+            return new Promise((resolve, reject) => {
+                Connection.query('UPDATE timetable SET timetable = ? WHERE owner = ?', [JSON.stringify(timetable), username], (err:any, results:any) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(results);
+                    }
                 }
-        
-                //delete user
-                await db.delete('users:' + username);
-            } catch (error) {
-                console.log(error);
-                return Routine.MkError("Fehler beim Löschen des Benutzers");
+                );
+            });
+        }
+
+        //update user's timetable timetable ausgange and studien
+        export async function SetAusgangeStudien(username: string, ausgange: number, studien: number) {
+            return new Promise((resolve, reject) => {
+                Connection.query('UPDATE timetable SET ausgange = ?, studien = ? WHERE owner = ?', [ausgange, studien, username], (err:any, results:any) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(results);
+                    }
+                }
+                );
+            });
+        }
+
+        //update user's type. if type is student, get the class, create a timetable for him and for timetable ausgange and studien get the class ausgange and studien
+        export async function SetType(username: string, type: string) {
+            //get class by username
+            var user = await User.GetByUsername(username) as any;
+            var class_title = user.class;
+            if (type == 'student') {
+                var StudentClass = await SchoolClass.GetByTitle(class_title) as any;
+                var StudentTimeTable = await TimeTable.Create(username, StudentClass.timetable, StudentClass.ausgange, StudentClass.studien, 0);
             }
+            return new Promise((resolve, reject) => {
+                Connection.query('UPDATE users SET type = ? WHERE username = ?', [type, username], (err:any, results:any) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(results);
+                    }
+                }
+                );
+            });
+        }
+
+        //set user's password
+        export async function SetPassword(username: string, password: string) {
+            return new Promise((resolve, reject) => {
+                Connection.query('UPDATE users SET password = ? WHERE username = ?', [password, username], (err:any, results:any) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(results);
+                    }
+                }
+                );
+            });
+        }
+
+        //set user's token
+        export async function SetToken(username: string, token: string) {
+            return new Promise((resolve, reject) => {
+                Connection.query('UPDATE users SET token = ? WHERE username = ?', [token, username], (err:any, results:any) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(results);
+                    }
+                }
+                );
+            });
+        }
+
+    }
+    
+    // class schema: 	id	owner	timetable(needs to be parsed, because this is a text containing json)	ausgange	studien	class_sync	
+    export namespace TimeTable{
+        //dont forget the json parse
+
+        export async function GetByOwner(owner: string) {
+            return new Promise((resolve, reject) => {
+                Connection.query('SELECT * FROM classes WHERE owner = ?', [owner], (err:any, results:any) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        if (results.length == 0) {
+                            resolve(null);
+                        } else {
+                           //get result.timetable and parse it
+                           var timetable = JSON.parse(results[0].timetable);
+                           results[0].timetable = timetable;
+                           resolve(results[0]);
+                        }
+                    }
+                });
+            });
+        }
+
+        export async function Create(owner: string, timetable: string, ausgange: string, studien: number, class_sync: number) {
+            return new Promise((resolve, reject) => {
+                Connection.query('INSERT INTO timetable (owner, timetable, ausgange, studien, class_sync) VALUES (?, ?, ?, ?, ?)', [owner, timetable, ausgange, studien, class_sync], (err:any, results:any) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(results.insertId);
+                    }
+                });
+            });
+        }
+
+
+
+
+    }
+
+    //class schema: id	formteacher	title	ausgange	studien	editing
+
+    export namespace SchoolClass{
+        export async function GetByFormteacher(formteacher: string) {
+            return new Promise((resolve, reject) => {
+                Connection.query('SELECT * FROM classes WHERE formteacher = ?', [formteacher], (err:any, results:any) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        if (results.length == 0) {
+                            resolve(null);
+                        } else {
+                            resolve(results[0]);
+                        }
+                    }
+                });
+            });
+        }
+
+        export async function GetByTitle(title: string) {
+            return new Promise((resolve, reject) => {
+                Connection.query('SELECT * FROM classes WHERE title = ?', [title], (err:any, results:any) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        if (results.length == 0) {
+                            resolve(null);
+                        } else {
+                            resolve(results[0]);
+                        }
+                    }
+                });
+            });
+        }
+
+        //get cll classes as array of class titles
+        export async function GetAll() {
+            return new Promise((resolve, reject) => {
+                Connection.query('SELECT title FROM classes', (err:any, results:any) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        var classes = [];
+
+                        for (var i = 0; i < results.length; i++) {
+                            classes.push(results[i].title);
+                        }
+                        resolve(classes);
+                    }
+                });
+            });
+        }
+
+
+        //get class assigned to a student
+        export async function GetByUser(username: string) {
+            //get user by username
+            var user = await User.GetByUsername(username) as any;
+            return new Promise((resolve, reject) => {
+                Connection.query('SELECT * FROM classes WHERE id = ?', [user.class_title], (err:any, results:any) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        if (results.length == 0) {
+                            resolve(null);
+                        } else {
+                            resolve(results[0]);
+                        }
+                    }
+                });
+            });
+        }
+
+        export async function Create(formteacher: string, title: string, ausgange: string, studien: number, editing: number) {
+            return new Promise((resolve, reject) => {
+                Connection.query('INSERT INTO classes (formteacher, title, ausgange, studien, editing) VALUES (?, ?, ?, ?, ?)', [formteacher, title, ausgange, studien, editing], (err:any, results:any) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(results.insertId);
+                    }
+                });
+            });
+        }
+
+        //get all students from a class as array of usernames
+        export async function GetStudents(class_title: string) {
+            return new Promise((resolve, reject) => {
+                Connection.query('SELECT * FROM users WHERE class = ?', [class_title], (err:any, results:any) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        if (results.length == 0) {
+                            resolve(null);
+                        } else {
+                            var students = [];
+                            for (var i = 0; i < results.length; i++) {
+                                students.push(results[i].username);
+                            }
+                            resolve(students);
+                        }
+                    }
+                });
+            });
+        }
+
+        //setclassparameters go through all students and set their  ausgange and studien, if class_sync is 1
+        export async function SetClassParameters(class_title: string, ausgange: number, studien: number) {
+            //get all students from class
+            var students = await GetStudents(class_title) as any;
+            //go through all students and set their  ausgange and studien, if class_sync is 1
+            for (var i = 0; i < students.length; i++) {
+                var student = await User.GetByUsername(students[i]) as any;
+                if (student.class_sync == 1) {
+                    User.SetAusgangeStudien(student.username, ausgange, studien);
+                }
+            }
+            //set class ausgange and studien
+            return new Promise((resolve, reject) => {
+                Connection.query('UPDATE classes SET ausgange = ?, studien = ? WHERE title = ?', [ausgange, studien, class_title], (err:any, results:any) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(results);
+                    }
+                }
+                );
+            });
+
         }
 
     }
 
-    export namespace Serializer{
+    export namespace Serializer {
 
-        export async function GetUserOverview(username: string){
-            let user = await Request.User(username);
-            if (user == null) return Routine.MkError("Benutzer existiert nicht");
-            
+        export async function SerializeUserPreview(username: string) {
+            let user = await User.GetByUsername(username) as any;
             return {
-                Username: user.Username,
-                Type: user.Type,
-                Surname: user.Surname,
-                Lastname: user.Lastname,
-                Class: user.Class,
-            }
+                username: user.username,
+                email: user.email,
+                first_name: user.first_name,
+                last_name: user.last_name,
+                type: user.type,
+                class_title: user.class,
+            };
         }
 
-        export async function GetStudentOverview(username: string){
-            let user = await Request.User(username);
-            if (user == null) return Routine.MkError("Benutzer existiert nicht");
-            
-            let timetable = await Request.Timetable(username);
-            if (timetable == null) return Routine.MkError("Stundenplan existiert nicht");
-
-            let classoverview = await GetClassOverview(user.Class);
-            if (classoverview == null) return Routine.MkError("Klasse existiert nicht");
-
+        export async function SerializeClassPreview(sclass: string) {
+            let schoolclass = await SchoolClass.GetByTitle(sclass) as any;
+            let students = await SchoolClass.GetStudents(sclass) as any;
             return {
-                Username: user.Username,
-                Type: user.Type,
-                Surname: user.Surname,
-                Lastname: user.Lastname,
-                Class: user.Class,
-
-                Wpfs: timetable.WPFs,
-                Studien: timetable.Studien,
-                Ausgange: timetable.Ausgange,
-
-                EditMode: timetable.EditMode,
-                
-                CustomRules: timetable.CustomRules,
-            }
+                title: schoolclass.title,
+                formteacher: schoolclass.formteacher,
+                ausgange: schoolclass.ausgange,
+                studien: schoolclass.studien,
+                editing: schoolclass.editing,
+                students: students
+            };
         }
 
-        export async function GetTimeTableOverview(username: string){
-            let user = await Request.User(username);
-            if (user == null) return Routine.MkError("Benutzer existiert nicht");
-            
-            let timetable = await Request.Timetable(username);
-            if (timetable == null) return Routine.MkError("Stundenplan existiert nicht");
 
-            let classoverview = await GetClassOverview(user.Class);
-            if (classoverview == null) return Routine.MkError("Klasse existiert nicht");
-
+        export async function SerializeUserFull(username : string) {
+            let user = await User.GetByUsername(username) as any;
+            let timetable = null;
+            if (user.type == 'student') {
+                timetable = await TimeTable.GetByOwner(user.username) as any;
+            }
+            let schoolclass = await SchoolClass.GetByTitle(user.class) as any;
             return {
-                Username: user.Username,
-                Class: user.Class,
-
-                Wpfs: timetable.WPFs,
-                Studien: timetable.Studien,
-                Ausgange: timetable.Ausgange,
-
-                EditMode: timetable.EditMode,
-                
-                CustomRules: timetable.CustomRules,
-
-                Timetable: timetable.Timetable,
-            }
+                username: user.username,
+                email: user.email,
+                first_name: user.first_name,
+                last_name: user.last_name,
+                last_change: user.last_change,
+                editable: user.editable,
+                colorful: user.colorful,
+                type: user.type,
+                class_title: user.class,
+                timetable: timetable,
+                schoolclass: schoolclass,
+                token: user.token,
+            };
         }
 
-        export async function GetClassOverview(classname: string){
-            let rclass = await Request.Class(classname);
-            if (rclass == null) return Routine.MkError("Klasse existiert nicht");
-            
-            //get overview of headteacher of class and count of class students
-            let headteacher = await GetUserOverview(rclass.Headteacher);
-            let students = await Request.ClassStudents(classname);
-            let count = students.length;
-
+        export async function SerializeUserPrevireFull(username : string) {
+            let user = await User.GetByUsername(username) as any;
+            let timetable = null;
+            if (user.type == 'student') {
+                timetable = await TimeTable.GetByOwner(user.username) as any;
+            }
+            let schoolclass = await SchoolClass.GetByTitle(user.class) as any;
             return {
-                Classname: rclass.Classname,
-                Headteacher: headteacher,
-                Students: count,
-
-                WPFs: rclass.WPFs,
-                Studien: rclass.Studien,
-                Ausgange: rclass.Ausgange,
-
-                EditMode: rclass.EditMode,
-            }
+                username: user.username,
+                email: user.email,
+                first_name: user.first_name,
+                last_name: user.last_name,
+                last_change: user.last_change,
+                editable: user.editable,
+                colorful: user.colorful,
+                type: user.type,
+                class_title: user.class,
+                timetable: timetable,
+                schoolclass: schoolclass,
+            };
         }
-
-        export async function GetClassExtendedOverview(classname: string){
-            let rclass = await Request.Class(classname);
-            if (rclass == null) return Routine.MkError("Klasse existiert nicht");
-            
-            //get overview of headteacher of class and count of class students
-            let headteacher = await GetUserOverview(rclass.Headteacher);
-            let students = await Request.ClassStudents(classname);
-            let count = students.length;
-
-            //get all students of class
-            let studentsOverview = new Array<any>();
-            for (let i = 0; i < students.length; i++) {
-                let student = await GetStudentOverview(students[i]);
-                studentsOverview.push(student);
-            }
-
-            //get all teachers assigned to class
-            let teachers = await Request.ClassTeachers(classname);
-            let teachersOverview = new Array<any>();
-            for (let i = 0; i < teachers.length; i++) {
-                let teacher = await GetUserOverview(teachers[i]);
-                teachersOverview.push(teacher);
-            }
-
-            return {
-                Classname: rclass.Classname,
-                Headteacher: headteacher,
-                Students: count,
-
-                WPFs: rclass.WPFs,
-                Studien: rclass.Studien,
-                Ausgange: rclass.Ausgange,
-
-                EditMode: rclass.EditMode,
-
-                StudentsOverview: studentsOverview,
-                TeachersOverview: teachersOverview,
-
-            }
-            
-        }
-
-        //this function gets a day and number of time uints and returns an array of students of specific class  with value for specified time unit on specified day and the next time unit, if it exists
-        export async function GetClassTimetable(classname: string, day: number, timeunit: number){
-            let rclass = await Request.Class(classname);
-            if (rclass == null) return Routine.MkError("Klasse existiert nicht");
-
-            let students = await Request.ClassStudents(classname);
-            
-            let StudentGrid = new Array<any>();
-            for (let i = 0; i < students.length; i++) {
-                let student = await Request.User(students[i]);
-                let timetable = await Request.Timetable(student.Username);
-                let value = timetable.Timetable[day][timeunit];
-                var nextvalue = "-";
-                if (timeunit < TimeUnitsPerDay - 1){
-                    nextvalue = timetable.Timetable[day][timeunit + 1];
-                }
-                StudentGrid.push({
-                    Username: student.Username,
-                    Surname: student.Surname,
-                    Lastname: student.Lastname,
-                    Value: value,
-                    NextValue: nextvalue,
-                });
-            }
-
-            return StudentGrid;
-        }
-
-        //this function gets data of whole class by day and returns an array of students but every student has an array of values for every time unit of the day
-        export async function GetClassTimetableByDay(classname: string, day: number){
-            let rclass = await Request.Class(classname);
-            if (rclass == null) return Routine.MkError("Klasse existiert nicht");
-
-            let students = await Request.ClassStudents(classname);
-            
-            let StudentGrid = new Array<any>();
-            for (let i = 0; i < students.length; i++) {
-                let student = await Request.User(students[i]);
-                let timetable = await Request.Timetable(student.Username);
-                let values = timetable.Timetable[day];
-                
-                StudentGrid.push({
-                    Username: student.Username,
-                    Surname: student.Surname,
-                    Lastname: student.Lastname,
-                    Class: student.Class,
-                    Values: values,
-                });
-
-            }
-
-            return StudentGrid;
-        }
-
         
-        
+
+        export async function GetAllClasses() {
+            let classes = await SchoolClass.GetAll() as any;
+            let result = [];
+            for (let i = 0; i < classes.length; i++) {
+                result.push(await SerializeClassPreview(classes[i]));
+            }
+            return result;
+        }
+
+        export async function GetAllUsers() {
+            let users = await User.GetAll() as any;
+            let result = [];
+            for (let i = 0; i < users.length; i++) {
+                result.push(await SerializeUserPreview(users[i]));
+            }
+            return result;
+        }
+
+
+
     }
+
+    export async function Auth(username: string, password: string) {
+        let user = await User.GetByUsername(username) as any;
+        if (user == null) {
+            return null;
+        }
+        if (user.password != password) {
+            return null;
+        }
+        //if user has no token, create one
+        if (user.token == null) {
+            var token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+            User.SetToken(username, token);
+        }
+
+        return Serializer.SerializeUserFull(username);
+    }
+
+    
+    
 }	

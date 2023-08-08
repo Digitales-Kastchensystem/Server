@@ -11,6 +11,7 @@ export var Config = {
         port: 8000,
         username: 'root',
         password: 'root',
+        database: 'ks',
     },
     school:{
         title: 'School',
@@ -56,6 +57,7 @@ export function loadConfig(filename: string) {
         Config.db.port = config.get('Database', 'port')*1;
         Config.db.username = config.get('Database', 'username');
         Config.db.password = config.get('Database', 'password');
+        Config.db.database = config.get('Database', 'database');
 
         Config.school.title = config.get('School', 'school_name');
         Config.school.html_title = config.get('School', 'school_web_name');
