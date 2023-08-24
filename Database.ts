@@ -1,13 +1,14 @@
 //import mysql 
 import * as mysql from 'mysql';
 import { ApiLog, Log } from './Log';
+import {TimeTableRoutine}  from './TimeTable';
+import { TimeTableConfig } from './Config';
 
 
 export namespace Database {
 
 
     export let Connection:any = null;
-    let TimeUnitsPerDay = 10;
     
     export namespace Routine {
         /**
@@ -95,6 +96,24 @@ export namespace Database {
         }
 
 
+        //this function checks if user is a headmaster (klassenvorstand). if no, user is deleted. if yes, return an error. Delete timetale with owner = username, if exists
+        export async function DeleteUser(username: string) {
+            //get all classes with formteacher = username
+            var schoolclass = await SchoolClass.GetByFormteacher(username) as any;
+            //if not null, return error
+            if (schoolclass != null) return Routine.MkError("User is a formteacher");
+            //delete user
+            await Delete(username);
+            Connection.query('DELETE FROM timetable WHERE owner = ?', [username], (err:any, results:any) => {
+                if (err) {
+                    console.log(err);
+                    return Routine.MkError("Error deleting timetable");
+                } else {
+                    return Routine.MkInfo("User deleted");
+                }
+            });
+        }
+
         export async function GetByToken(token: string) {
             return new Promise((resolve, reject) => {
                 Connection.query('SELECT * FROM users WHERE token = ?', [token], (err:any, results:any) => {
@@ -115,7 +134,7 @@ export namespace Database {
         export async function Create(username: string, email: string, first_name: string, last_name: string, last_change: string, editable: number, colorful: number, type: string, class_title: string, password: string) {
             if (type == 'student') {
                 var StudentClass = await SchoolClass.GetByTitle(class_title) as any;
-                var StudentTimeTable = await TimeTable.Create(username, JSON.stringify({}), StudentClass.ausgange, StudentClass.studien, 0);
+                var StudentTimeTable = await TimeTable.Create(username, JSON.stringify(TimeTableRoutine.MakeBlankTimeTable()), StudentClass.ausgange, StudentClass.studien, 0);
             }
             
             return new Promise((resolve, reject) => {
@@ -205,7 +224,7 @@ export namespace Database {
             var class_title = user.class;
             if (type == 'student') {
                 var StudentClass = await SchoolClass.GetByTitle(class_title) as any;
-                var StudentTimeTable = await TimeTable.Create(username, StudentClass.timetable, StudentClass.ausgange, StudentClass.studien, 0);
+                var StudentTimeTable = await TimeTable.Create(username, JSON.stringify(TimeTableRoutine.MakeBlankTimeTable()), StudentClass.ausgange, StudentClass.studien, 0);
             }
             return new Promise((resolve, reject) => {
                 Connection.query('UPDATE users SET type = ? WHERE username = ?', [type, username], (err:any, results:any) => {
@@ -255,7 +274,7 @@ export namespace Database {
 
         export async function GetByOwner(owner: string) {
             return new Promise((resolve, reject) => {
-                Connection.query('SELECT * FROM classes WHERE owner = ?', [owner], (err:any, results:any) => {
+                Connection.query('SELECT * FROM timetable WHERE owner = ?', [owner], (err:any, results:any) => {
                     if (err) {
                         reject(err);
                     } else {
@@ -272,15 +291,59 @@ export namespace Database {
             });
         }
 
+        //get raw timetable by user wich is a json string of 2d array
+        export async function GetRawByOwner(owner: string) {
+            return new Promise((resolve, reject) => {
+                Connection.query('SELECT timetable FROM timetable WHERE owner = ?', [owner], (err:any, results:any) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        if (results.length == 0) {
+                            resolve(null);
+                        } else {
+                            resolve(JSON.parse(results[0].timetable));
+                        }
+                    }
+                });
+            });
+        }
+
         export async function Create(owner: string, timetable: string, ausgange: string, studien: number, class_sync: number) {
             return new Promise((resolve, reject) => {
-                Connection.query('INSERT INTO timetable (owner, timetable, ausgange, studien, class_sync) VALUES (?, ?, ?, ?, ?)', [owner, timetable, ausgange, studien, class_sync], (err:any, results:any) => {
+                Connection.query('INSERT INTO timetable (owner, timetable, ausgange, studien, class_sync) VALUES (?, ?, ?, ?, ?)', [owner, JSON.stringify(timetable), ausgange, studien, class_sync], (err:any, results:any) => {
                     if (err) {
                         reject(err);
                     } else {
                         resolve(results.insertId);
                     }
                 });
+            });
+        }
+
+        export async function Update(owner: string, timetable: string, ausgange: string, studien: number, class_sync: number) {
+            return new Promise((resolve, reject) => {
+                Connection.query('UPDATE timetable SET timetable = ?, ausgange = ?, studien = ?, class_sync = ? WHERE owner = ?', [JSON.stringify(timetable), ausgange, studien, class_sync, owner], (err:any, results:any) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(results);
+                    }
+                }
+                );
+            });
+        }
+
+        //keep ausgange and studien and class sync old values, only update timetable function
+        export async function UpdateTimetable(owner: string, timetable: any[][]){
+            return new Promise((resolve, reject) => {
+                Connection.query('UPDATE timetable SET timetable = ? WHERE owner = ?', [JSON.stringify(timetable), owner], (err:any, results:any) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(results);
+                    }
+                }
+                );
             });
         }
 
@@ -377,7 +440,7 @@ export namespace Database {
         //get all students from a class as array of usernames
         export async function GetStudents(class_title: string) {
             return new Promise((resolve, reject) => {
-                Connection.query('SELECT * FROM users WHERE class = ?', [class_title], (err:any, results:any) => {
+                Connection.query('SELECT * FROM users WHERE type = "student" AND class = ?', [class_title], (err:any, results:any) => {
                     if (err) {
                         reject(err);
                     } else {
@@ -420,6 +483,110 @@ export namespace Database {
 
         }
 
+        //Update function wich takes class, username of a new teacher and ausgange and studien and updates them
+        export async function Update(class_title: string, formteacher: string, studien: number, ausgange: number, editing: boolean){
+
+            //convert editing to number, if true 1
+            var EditingClass = 0;
+            if (editing)
+                EditingClass = 1;
+
+            let new_formteacher = await User.GetByUsername(formteacher) as any;
+            //username: string, email: string, first_name: string, last_name: string, last_change: string, editable: string, colorful: string
+            User.Update(new_formteacher.username, new_formteacher.email, new_formteacher.first_name, new_formteacher.last_name, new_formteacher.last_change, new_formteacher.editable, new_formteacher.colorful);
+            //set class ausgange and studien
+            return new Promise((resolve, reject) => {
+                Connection.query('UPDATE classes SET formteacher = ?, ausgange = ?, studien = ?, editing = ? WHERE title = ?', [formteacher, ausgange, studien, EditingClass, class_title], (err:any, results:any) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(results);
+                    }
+                });
+            });
+
+        }
+
+        //on Deleting schoolclass, go through all users with this class assigned and set their class to the last class created. if there is only one class left, dont delete it
+        export async function Delete(class_title: string) {
+            //get all users from class, not only students, but everyone. use sql query
+            Connection.query('SELECT * FROM users WHERE class = ?', [class_title], (err:any, results:any) => {
+                if (err) {
+                    console.log(err);
+                } else {
+                    //get the number of classes
+                    Connection.query('SELECT COUNT(*) FROM classes', (err:any, results:any) => {
+                        if (err) {
+                            console.log(err);
+                        } else {
+                            //if there is only one class left, dont delete it
+                            if (results[0]['COUNT(*)'] == 1) {
+                                console.log("There is only one class left, dont delete it");
+                            } else {
+                               //delete the class
+                                 Connection.query('DELETE FROM classes WHERE title = ?', [class_title], (err:any, results:any) => {
+                                    if (err) {
+                                        console.log(err);
+                                    } else {
+                                        //get the latest class from the database
+                                        Connection.query('SELECT * FROM classes ORDER BY id DESC LIMIT 1', (err:any, results:any) => {
+                                            if (err) {
+                                                console.log(err);
+                                            } else {
+                                                //go through all users and set their class to the last class created
+                                                for (var i = 0; i < results.length; i++) {
+                                                    Connection.query('UPDATE users SET class = ? WHERE class = ?', [results[0].title, class_title], (err:any, results:any) => {
+                                                        if (err) {
+                                                            console.log(err);
+                                                        } else {
+                                                            return Routine.MkInfo("Class deleted");
+                                                        }
+                                                    });
+                                                }
+                                            }
+                                        });
+                                    }
+                                });
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+    }
+
+    export namespace Settings {
+        
+        export async function Get(setting: string) {
+            return new Promise((resolve, reject) => {
+                Connection.query('SELECT * FROM settings WHERE setting = ?', [setting], (err:any, results:any) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        if (results.length == 0) {
+                            resolve(null);
+                        } else {
+                            resolve(results[0]);
+                        }
+                    }
+                });
+            });
+        }
+
+        export async function Set(setting: string, value: string) {
+            return new Promise((resolve, reject) => {
+                Connection.query('UPDATE settings SET value = ? WHERE setting = ?', [value, setting], (err:any, results:any) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(results);
+                    }
+                }
+                );
+            });
+        }
+        
     }
 
     export namespace Serializer {
@@ -439,9 +606,10 @@ export namespace Database {
         export async function SerializeClassPreview(sclass: string) {
             let schoolclass = await SchoolClass.GetByTitle(sclass) as any;
             let students = await SchoolClass.GetStudents(sclass) as any;
+            let formtecher_preview = await Serializer.SerializeUserPreview(schoolclass.formteacher) as any;
             return {
                 title: schoolclass.title,
-                formteacher: schoolclass.formteacher,
+                formteacher: formtecher_preview,
                 ausgange: schoolclass.ausgange,
                 studien: schoolclass.studien,
                 editing: schoolclass.editing,
@@ -494,7 +662,59 @@ export namespace Database {
                 schoolclass: schoolclass,
             };
         }
-        
+
+        export async function SerializeClassPreviewFull(sclass: string) {
+            let schoolclass = await SchoolClass.GetByTitle(sclass) as any;
+            let classStudentsList = await SchoolClass.GetStudents(sclass) as any;
+            if (classStudentsList == null)
+                classStudentsList = [];
+            let students = [];
+            console.log(classStudentsList);
+            for (let i = 0; i < classStudentsList.length; i++)
+                students.push(await Serializer.SerializeUserPreview(classStudentsList[i]));
+            let formtecher_preview = await Serializer.SerializeUserPreview(schoolclass.formteacher) as any;
+            return {
+                title: schoolclass.title,
+                formteacher: formtecher_preview,
+                ausgange: schoolclass.ausgange,
+                studien: schoolclass.studien,
+                editing: schoolclass.editing,
+                students: students
+            };
+        }
+
+        export async function SerializeStudentTimeTable(username: string) {
+            let user = await User.GetByUsername(username) as any;
+            let timetable = await TimeTable.GetByOwner(user.username) as any;
+            let schoolclass = await SchoolClass.GetByTitle(user.class) as any;
+            //add property to timetable
+            timetable.Settings = {
+                    Days: TimeTableConfig.Days,
+                    Units: TimeTableConfig.Units,
+                    Colours: {
+                        Studium: TimeTableConfig.Studium,
+                        Ausgang: TimeTableConfig.Ausgang,
+                        OtherColours: TimeTableConfig.Colours,
+                        IgnoreCapitalLetters: TimeTableConfig.IgnoreCapitalLetters,
+                        IgnoreSpaces: TimeTableConfig.IgnoreSpaces,
+                        IgnoreBracketsContent: TimeTableConfig.IgnoreBracketsContent,
+                    }
+            };
+            return {
+                username: user.username,
+                email: user.email,
+                first_name: user.first_name,
+                last_name: user.last_name,
+                last_change: user.last_change,
+                editable: user.editable,
+                colorful: user.colorful,
+                type: user.type,
+                class_title: user.class,
+                timetable: timetable,
+                schoolclass: schoolclass,
+            };
+        }
+
 
         export async function GetAllClasses() {
             let classes = await SchoolClass.GetAll() as any;

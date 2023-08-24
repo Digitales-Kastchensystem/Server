@@ -61,9 +61,11 @@ router.post('/class/list', (req, res) => {
         }
         ).catch((err) => {
             res.json(Core.Database.Routine.MkError("An error occured while getting classes!"));
+            console.error(err);
         });
     }).catch((err) => {
         res.json(Core.Database.Routine.MkError("An error occured while getting classes!"));
+        console.error(err);
     });
 });
 
@@ -179,19 +181,20 @@ router.post('/user/get', (req, res) => {
             res.json(user);
         }).catch((err) => {
             res.json(Core.Database.Routine.MkError("An error occured while getting user!"));
+            console.error(err);
         });
     }).catch((err) => {
         res.json(Core.Database.Routine.MkError("An error occured while getting user!"));
+        console.error(err);
     });
 });
 
 //POST /user/update
-router.post('/user/update', (req, res) => {
+router.post('/user/update', async(req, res) => {
     ApiLog('/user/update', req.ip);
     let token = req.body.token;
-    let username = req.body.username;
     let user = req.body.user as any; // Use 'as any' assertion here
-    Core.Database.User.GetByToken(token).then((foundUser: { type: string, username: string }) => {
+    Core.Database.User.GetByToken(token).then(async (foundUser: { type: string, username: string }) => {
         if (!foundUser) {
             res.json(Core.Database.Routine.MkError("Invalid token!", 401));
             return;
@@ -206,8 +209,18 @@ router.post('/user/update', (req, res) => {
             res.json(Core.Database.Routine.MkError("Not all fields are filled!", 401));
             return;
         }
-        // Update(username: string, email: string, first_name: string, last_name: string, last_change: string, editable: string, colorful: string) {
-        Core.Database.User.Update(user.username, user.email, user.first_name, user.last_name, user.last_change, user.editable, user.colorful).then((result) => {
+        //if user.last_change or user.editable or user.colorful are not set, get user by username and set them to the old values
+        var last_change = user.last_change;
+        var editable = user.editable;
+        var colorful = user.colorful;
+
+        var OldUser = await Core.Database.User.GetByUsername(user.username) as any;
+        if (!last_change) last_change = OldUser.last_change;
+        if (!editable) editable = OldUser.editable;
+        if (!colorful) colorful = OldUser.colorful;
+        Core.Database.User.Update(user.username, user.email, user.first_name, user.last_name, last_change, editable, colorful).then(async (result) => {
+            //if user's type is changed, call functnio to change it
+            if (OldUser.type !== user.type) await Core.Database.User.SetType(user.username, user.type);
             res.json(result);
         }).catch((err) => {
             console.error(err);
@@ -217,4 +230,192 @@ router.post('/user/update', (req, res) => {
         console.error(err);
         res.json(Core.Database.Routine.MkError("An error occurred while updating user!"));
     });
+});
+
+//POST /user/update-password
+router.post('/user/update-password', (req, res) => {
+    ApiLog('/user/update-password', req.ip);
+    let token = req.body.token;
+    let username = req.body.username;
+    let password = req.body.password;
+    Core.Database.User.GetByToken(token).then((foundUser: { type: string, username: string }) => {
+        if (!foundUser) {
+            res.json(Core.Database.Routine.MkError("Invalid token!", 401));
+            return;
+        }
+        //if user is not admin and teacher and is not the user he is trying to update, return error
+        if (foundUser.type !== "admin" && foundUser.username !== username) {
+            res.json(Core.Database.Routine.MkError("You are not authorized to update this user!", 401));
+            return;
+        }
+        //if password is not set, return error
+        if (!password) {
+            res.json(Core.Database.Routine.MkError("Password is not set!", 401));
+            return;
+        }
+        Core.Database.User.SetPassword(username, password).then((result) => {
+            res.json(result);
+        }).catch((err) => {
+            console.error(err);
+            res.json(Core.Database.Routine.MkError("An error occurred while updating user!"));
+        });
+    }).catch((err) => {
+        console.error(err);
+        res.json(Core.Database.Routine.MkError("An error occurred while updating user!"));
+    });
+});
+
+//POST /class/get
+router.post('/class/get', (req, res) => {
+    ApiLog('/class/get', req.ip);
+    let token = req.body.token;
+    let title = req.body.class_title;
+    Core.Database.User.GetByToken(token).then((user : { type: string, username: string, class: string }) => {
+        if (!user) {
+            res.json(Core.Database.Routine.MkError("Invalid token!", 401));
+            return;
+        }
+        //if user is not admin and teacher and is not the user he is trying to get, return error
+        if (user.type !== "admin" && user.type !== "teacher" && user.class !== title) {
+            res.json(Core.Database.Routine.MkError("You are not authorized to get this class!", 401));
+            return;
+        }
+        Core.Database.Serializer.SerializeClassPreviewFull(title).then((classData) => {
+            if (!classData) {
+                res.json(Core.Database.Routine.MkError("Class not found!", 401));
+                return;
+            }
+            res.json(classData);
+        }).catch((err) => {
+            res.json(Core.Database.Routine.MkError("An error occured while getting class!"));
+            console.error(err);
+        });
+    }).catch((err) => {
+        res.json(Core.Database.Routine.MkError("An error occured while getting class!"));
+        console.error(err);
+    });
+});
+
+//post /class/update update class.formteacher_username, class.StudyHours is class.studien and class.outings is class.ausgange
+router.post('/class/update', (req, res) => {
+    ApiLog('/class/update', req.ip);
+    let token = req.body.token;
+    let class_title = req.body.class.class_title;
+    let formteacher_username = req.body.class.formteacher_username;
+    let StudyHours = req.body.class.StudyHours;
+    let outings = req.body.class.Outings;
+    let editing = req.body.class.Editing;
+
+    Core.Database.User.GetByToken(token).then((foundUser: { type: string, username: string }) => {
+        if (!foundUser) {
+            res.json(Core.Database.Routine.MkError("Invalid token!", 401));
+            return;
+        }
+        //if user is not admin and teacher and is not the user he is trying to update, return error
+        if (foundUser.type !== "admin" && foundUser.type !== "teacher") {
+            res.json(Core.Database.Routine.MkError("You are not authorized to update this class!", 401));
+            return;
+        }
+        //if class_title is not set, return error
+        if (!class_title) {
+            res.json(Core.Database.Routine.MkError("Class title is not set!", 401));
+            return;
+        }
+        Core.Database.SchoolClass.Update(class_title, formteacher_username, StudyHours, outings, editing).then((result) => {
+            res.json(result);
+        }).catch((err) => {
+            console.error(err);
+            res.json(Core.Database.Routine.MkError("An error occurred while updating class!"));
+        });
+    }).catch((err) => {
+        console.error(err);
+        res.json(Core.Database.Routine.MkError("An error occurred while updating class!"));
+    });
+});
+
+
+//POST /user/timetable/get
+router.post('/user/timetable/get', (req, res) => {
+    ApiLog('/user/timetable/get', req.ip);
+    let token = req.body.token;
+    let username = req.body.username;
+    Core.Database.User.GetByToken(token).then((user : { type: string, username: string }) => {
+        if (!user) {
+            res.json(Core.Database.Routine.MkError("Invalid token!", 401));
+            return;
+        }
+        //if user is not admin and teacher and is not the user he is trying to get, return error
+        if (user.type !== "admin" && user.type !== "teacher" && user.username !== username) {
+            res.json(Core.Database.Routine.MkError("You are not authorized to get this user's timetable!", 401));
+            return;
+        }
+        Core.Database.Serializer.SerializeStudentTimeTable(username).then((timetable) => {
+            if (!timetable) {
+                res.json(Core.Database.Routine.MkError("User not found!", 401));
+                return;
+            }
+            res.json(timetable);
+        }).catch((err) => {
+            res.json(Core.Database.Routine.MkError("An error occured while getting user's timetable!"));
+            console.error(err);
+        });
+    }).catch((err) => {
+        res.json(Core.Database.Routine.MkError("An error occured while getting user's timetable!"));
+        console.error(err);
+    });
+});
+
+//POST /user/timetable/edit
+//accepts dayindex, unitindex, username and new value
+//admin and teacher can edit all, student can edit only his own timetabl if editing is enabled
+router.post('/user/timetable/edit', (req, res) => {
+    let token = req.body.token;
+    let dayindex = req.body.dayindex;
+    let unitindex = req.body.unitindex;
+    let username = req.body.username;
+    let value = req.body.value;
+
+    //console.log(req.body);
+    
+    //return;
+    ApiLog('/user/timetable/edit', req.ip);
+    
+    //get raw timtable and print it
+    //Core.Database.TimeTable.GetRawByOwner
+
+    Core.Database.User.GetByToken(token).then((user : { type: string, username: string }) => {
+        if (!user) {
+            res.json(Core.Database.Routine.MkError("Invalid token!", 401));
+            return;
+        }
+        //if user is not admin and teacher and is not the user he is trying to get, return error
+        if (user.type !== "admin" && user.type !== "teacher" && user.username !== username) {
+            res.json(Core.Database.Routine.MkError("You are not authorized to edit this user's timetable!", 401));
+            return;
+        }
+        Core.Database.TimeTable.GetRawByOwner(username).then((timetable: any[][]) => {
+            if (!timetable) {
+                res.json(Core.Database.Routine.MkError("User not found!", 401));
+                return;
+            }
+            //console.log(timetable);
+            //console.log(timetable[dayindex][unitindex]);
+            //console.log(value);
+            timetable[dayindex][unitindex] = value;
+            //console.log(timetable);
+            Core.Database.TimeTable.UpdateTimetable(username, timetable).then((result) => {
+                res.json(result);
+            }).catch((err) => {
+                res.json(Core.Database.Routine.MkError("An error occured while editing user's timetable!"));
+                console.error(err);
+            });
+        }).catch((err) => {
+            res.json(Core.Database.Routine.MkError("An error occured while editing user's timetable!"));
+            console.error(err);
+        });
+    }).catch((err) => {
+        res.json(Core.Database.Routine.MkError("An error occured while editing user's timetable!"));
+        console.error(err);
+    });
+    
 });

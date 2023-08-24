@@ -1,0 +1,91 @@
+{
+    "Warning" : "EDIT THIS FILE ONLY ON SETUP! EDITING THIS FILE WITH MULTIPLE USERS CAN CAUSE DATABASE DESYNC!",
+    "TimeTable": {
+        "IgnoreCapitalLetters": true,
+        "IgnoreSpaces": true,
+        "IgnoreBracketsContent": true,
+        "Studium" : {
+            "Cells": ["S", "Std", "Stud", "Studium"],
+            "StartColor": "#007AFF",
+            "EndColor": "#00F0FF"
+        },
+        "Ausgang" : {
+            "Cells": ["A", "Aus", "Ausgang"],
+            "StartColor": "#FF2D55",
+            "EndColor": "#FF5E3A"
+        },
+        "Colours" : [
+            {
+                "Cells": ["Mathe", "Mathematik", "Math", "M"],
+                "StartColor": "#FF9500",
+                "EndColor": "#FF5E3A"
+            },
+            {
+                "Cells": ["Deutsch", "D", "Deu", "DE"],
+                "StartColor": "#FF3B30",
+                "EndColor": "#FF9500"
+            }
+        ],
+        "Days": [
+            "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"
+        ],
+        "Units": [
+            {
+                "Start": "12:20",
+                "End": "12:40"
+            },
+            {
+                "Start": "12:40",
+                "End": "13:10"
+            },
+            {
+                "Start": "13:10",
+                "End": "13:35"
+            },
+            {
+                "Start": "13:35",
+                "End": "14:00"
+            },
+            {
+                "Start": "14:00",
+                "End": "14:25"
+            },
+            {
+                "Start": "14:25",
+                "End": "14:50"
+            },
+            {
+                "Start": "14:50",
+                "End": "15:15"
+            },
+            {
+                "Start": "15:15",
+                "End": "15:40"
+            },
+            {
+                "Start": "15:40",
+                "End": "16:05"
+            },
+            {
+                "Start": "16:05",
+                "End": "16:30"
+            },
+            {
+                "Start": "16:30",
+                "End": "16:55"
+            },
+            {
+                "Start": "16:55",
+                "End": "17:20"
+            },
+            {
+                "Start": "17:20",
+                "End": "17:45"
+            },
+            {
+                "Start": "17:45",
+                "End": "18:00"
+            }
+        ]
+    }
+}

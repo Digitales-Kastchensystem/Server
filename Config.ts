@@ -1,7 +1,17 @@
 
 const ConfigParser = require('configparser');
+const fs = require('fs');
 
-
+export var TimeTableConfig = {
+    Days: Array<String>,
+    Units: Array<String>,
+    Studium: {},
+    Ausgang: {},
+    Colours: Array<any>,
+    IgnoreBracketsContent: true,
+    IgnoreCapitalLetters: true,
+    IgnoreSpaces: true,
+};
 
 export var Config = {
     port: 3000,
@@ -30,6 +40,10 @@ export var Config = {
         allow_teacher_view_all: true,
         allow_teacher_edit_all: false,
     },
+    timetable: {
+        days: Array<String>,
+        timeUnits: 12,
+    },
     log: {
         log_file: 'ks_server.log',
         log_format: '[%asctime] (%levelname) - %message',
@@ -43,6 +57,13 @@ function convertToBoolean(value: string): boolean {
     } else {
         return false;
     }
+}
+
+function LoadTTConfig() {
+    //read file TimeTableConfig.json
+    //load into TimeTableConfig
+
+    TimeTableConfig = JSON.parse(fs.readFileSync('TimeTableConfig.json', 'utf8')).TimeTable;
 }
 
 export function loadConfig(filename: string) {
@@ -76,6 +97,11 @@ export function loadConfig(filename: string) {
 
         Config.log.log_file = config.get('Log', 'log_file');
         Config.log.log_format = config.get('Log', 'log_format');
+
+        //Config.timetable.days = config.get('School', 'days').split(',');
+        //Config.timetable.timeUnits = config.get('School', 'time_units_count')*1;
+
+        LoadTTConfig();
 
         Config.loaded = true;
 
