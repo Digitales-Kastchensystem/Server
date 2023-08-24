@@ -14,7 +14,7 @@ export namespace TimeTableRoutine{
             //for each time unit
             for(var j = 0; j < TimeTableConfig.Units.length; j++){
                 //add a new object
-                tt[i].push(" ");
+                tt[i].push("-");
             }
         }
         //wrap the timetable in a object

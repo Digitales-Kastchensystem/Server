@@ -95,6 +95,22 @@ export namespace Database {
             });
         }
 
+        export async function ChengeUserClass(username: string, class_title: string) {
+            //set user class to class_title and if user is a student, set his timetable to new class timetable
+            var user = await User.GetByUsername(username) as any;
+            Connection.query('UPDATE users SET class = ? WHERE username = ?', [class_title, username], async (err:any, results:any) => {
+                if (err) {
+                    console.log(err);
+                } else {
+                    if (user.type == 'student') {
+                        var StudentClass = await SchoolClass.GetByTitle(class_title) as any;
+                        var old_timetable = await TimeTable.GetByOwner(username) as any;
+                        await TimeTable.Update(username, JSON.stringify(old_timetable.timetable), StudentClass.ausgange, StudentClass.studien, old_timetable.class_sync);
+                    }
+                }
+            });
+        }
+
 
         //this function checks if user is a headmaster (klassenvorstand). if no, user is deleted. if yes, return an error. Delete timetale with owner = username, if exists
         export async function DeleteUser(username: string) {
@@ -310,7 +326,7 @@ export namespace Database {
 
         export async function Create(owner: string, timetable: string, ausgange: string, studien: number, class_sync: number) {
             return new Promise((resolve, reject) => {
-                Connection.query('INSERT INTO timetable (owner, timetable, ausgange, studien, class_sync) VALUES (?, ?, ?, ?, ?)', [owner, JSON.stringify(timetable), ausgange, studien, class_sync], (err:any, results:any) => {
+                Connection.query('INSERT INTO timetable (owner, timetable, ausgange, studien, class_sync) VALUES (?, ?, ?, ?, ?)', [owner, timetable, ausgange, studien, class_sync], (err:any, results:any) => {
                     if (err) {
                         reject(err);
                     } else {
@@ -322,7 +338,7 @@ export namespace Database {
 
         export async function Update(owner: string, timetable: string, ausgange: string, studien: number, class_sync: number) {
             return new Promise((resolve, reject) => {
-                Connection.query('UPDATE timetable SET timetable = ?, ausgange = ?, studien = ?, class_sync = ? WHERE owner = ?', [JSON.stringify(timetable), ausgange, studien, class_sync, owner], (err:any, results:any) => {
+                Connection.query('UPDATE timetable SET timetable = ?, ausgange = ?, studien = ?, class_sync = ? WHERE owner = ?', [timetable, ausgange, studien, class_sync, owner], (err:any, results:any) => {
                     if (err) {
                         reject(err);
                     } else {
@@ -593,6 +609,9 @@ export namespace Database {
 
         export async function SerializeUserPreview(username: string) {
             let user = await User.GetByUsername(username) as any;
+            let IsFormteacher = false;
+            if (await SchoolClass.GetByFormteacher(user.username) != null)
+                IsFormteacher = true;
             return {
                 username: user.username,
                 email: user.email,
@@ -600,13 +619,19 @@ export namespace Database {
                 last_name: user.last_name,
                 type: user.type,
                 class_title: user.class,
+                is_formteacher: IsFormteacher,
             };
         }
 
         export async function SerializeClassPreview(sclass: string) {
             let schoolclass = await SchoolClass.GetByTitle(sclass) as any;
+            if (schoolclass == null) return {};
             let students = await SchoolClass.GetStudents(sclass) as any;
-            let formtecher_preview = await Serializer.SerializeUserPreview(schoolclass.formteacher) as any;
+            let formtecher_preview = {};
+            try {
+                formtecher_preview = await Serializer.SerializeUserPreview(schoolclass.formteacher) as any;
+            } catch (e) {
+            }
             return {
                 title: schoolclass.title,
                 formteacher: formtecher_preview,
@@ -625,6 +650,10 @@ export namespace Database {
                 timetable = await TimeTable.GetByOwner(user.username) as any;
             }
             let schoolclass = await SchoolClass.GetByTitle(user.class) as any;
+            //check if GetClassNyFormteacher returns null
+            let IsFormteacher = false;
+            if (await SchoolClass.GetByFormteacher(user.username) != null)
+                IsFormteacher = true;
             return {
                 username: user.username,
                 email: user.email,
@@ -638,6 +667,7 @@ export namespace Database {
                 timetable: timetable,
                 schoolclass: schoolclass,
                 token: user.token,
+                is_formteacher: IsFormteacher,
             };
         }
 
@@ -648,6 +678,9 @@ export namespace Database {
                 timetable = await TimeTable.GetByOwner(user.username) as any;
             }
             let schoolclass = await SchoolClass.GetByTitle(user.class) as any;
+            let IsFormteacher = false;
+            if (await SchoolClass.GetByFormteacher(user.username) != null)
+                IsFormteacher = true;
             return {
                 username: user.username,
                 email: user.email,
@@ -660,6 +693,7 @@ export namespace Database {
                 class_title: user.class,
                 timetable: timetable,
                 schoolclass: schoolclass,
+                is_formteacher: IsFormteacher,
             };
         }
 

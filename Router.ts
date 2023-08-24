@@ -214,10 +214,14 @@ router.post('/user/update', async(req, res) => {
         var editable = user.editable;
         var colorful = user.colorful;
 
+
+
         var OldUser = await Core.Database.User.GetByUsername(user.username) as any;
         if (!last_change) last_change = OldUser.last_change;
         if (!editable) editable = OldUser.editable;
         if (!colorful) colorful = OldUser.colorful;
+        var OldUserClass = OldUser.class;
+        if (user.class !== OldUserClass) await Core.Database.User.ChengeUserClass(user.username, user.class_title);
         Core.Database.User.Update(user.username, user.email, user.first_name, user.last_name, last_change, editable, colorful).then(async (result) => {
             //if user's type is changed, call functnio to change it
             if (OldUser.type !== user.type) await Core.Database.User.SetType(user.username, user.type);
@@ -398,11 +402,9 @@ router.post('/user/timetable/edit', (req, res) => {
                 res.json(Core.Database.Routine.MkError("User not found!", 401));
                 return;
             }
-            //console.log(timetable);
-            //console.log(timetable[dayindex][unitindex]);
-            //console.log(value);
+
             timetable[dayindex][unitindex] = value;
-            //console.log(timetable);
+
             Core.Database.TimeTable.UpdateTimetable(username, timetable).then((result) => {
                 res.json(result);
             }).catch((err) => {
@@ -418,4 +420,107 @@ router.post('/user/timetable/edit', (req, res) => {
         console.error(err);
     });
     
+});
+
+//POST /user/delete Only admin can delete users
+router.post('/user/delete', (req, res) => {
+    ApiLog('/user/delete', req.ip);
+    let token = req.body.token;
+    let username = req.body.username;
+    Core.Database.User.GetByToken(token).then((foundUser: { type: string, username: string }) => {
+        if (!foundUser) {
+            res.json(Core.Database.Routine.MkError("Invalid token!", 401));
+            return;
+        }
+        //if user is not admin, return error
+        console.log(foundUser);
+        if (foundUser.type !== "admin") {
+            res.json(Core.Database.Routine.MkError("You are not authorized to delete users!", 401));
+            return;
+        }
+        //if username is not set, return error
+        if (!username) {
+            res.json(Core.Database.Routine.MkError("Username is not set!", 401));
+            return;
+        }
+        Core.Database.User.DeleteUser(username).then((result) => {
+            res.json({});
+        }).catch((err) => {
+            console.error(err);
+            res.json(Core.Database.Routine.MkError("An error occurred while deleting user!"));
+        });
+    }).catch((err) => {
+        console.error(err);
+        res.json(Core.Database.Routine.MkError("An error occurred while deleting user!"));
+    });
+});
+
+
+//POST /class/delete Only admin can delete classes
+router.post('/class/delete', (req, res) => {
+    ApiLog('/class/delete', req.ip);
+    let token = req.body.token;
+    let class_title = req.body.class_title;
+    Core.Database.User.GetByToken(token).then((foundUser: { type: string, username: string }) => {
+        if (!foundUser) {
+            res.json(Core.Database.Routine.MkError("Invalid token!", 401));
+            return;
+        }
+        //if user is not admin, return error
+        if (foundUser.type !== "admin") {
+            res.json(Core.Database.Routine.MkError("You are not authorized to delete classes!", 401));
+            return;
+        }
+        //if class_title is not set, return error
+        if (!class_title) {
+            res.json(Core.Database.Routine.MkError("Class title is not set!", 401));
+            return;
+        }
+        Core.Database.SchoolClass.Delete(class_title).then((result) => {
+            res.json({});
+        }).catch((err) => {
+            console.error(err);
+            res.json(Core.Database.Routine.MkError("An error occurred while deleting class!"));
+        });
+    }).catch((err) => {
+        console.error(err);
+        res.json(Core.Database.Routine.MkError("An error occurred while deleting class!"));
+    });
+});
+
+//POST /class/create Only admin can create classes
+router.post('/class/create', (req, res) => {
+    ApiLog('/class/create', req.ip);
+    let token = req.body.token;
+    let class_title = req.body.class.class_title;
+    let formteacher_username = req.body.class.formteacher_username;
+    let StudyHours = req.body.class.StudyHours;
+    let outings = req.body.class.Outings;
+    let editing = 0;
+    Core.Database.User.GetByToken(token).then((foundUser: { type: string, username: string }) => {
+        if (!foundUser) {
+            res.json(Core.Database.Routine.MkError("Invalid token!", 401));
+            return;
+        }
+        //if user is not admin, return error
+        if (foundUser.type !== "admin") {
+            res.json(Core.Database.Routine.MkError("You are not authorized to create classes!", 401));
+            return;
+        }
+        //if class_title is not set, return error
+        if (!class_title || !formteacher_username || !StudyHours || !outings) {
+            res.json(Core.Database.Routine.MkError("Not all fields are filled!", 401));
+            console.log(class_title, formteacher_username, StudyHours, outings);
+            return;
+        }
+        Core.Database.SchoolClass.Create(formteacher_username, class_title, StudyHours, outings, editing).then(async (result) => {
+            await Core.Database.User.ChengeUserClass(formteacher_username, class_title);
+        }).catch((err) => {
+            console.error(err);
+            res.json(Core.Database.Routine.MkError("An error occurred while creating class!"));
+        });
+    }).catch((err) => {
+        console.error(err);
+        res.json(Core.Database.Routine.MkError("An error occurred while creating class!"));
+    });
 });
