@@ -5,8 +5,12 @@ const fs = require('fs');
 export var TimeTableConfig = {
     Days: Array<String>,
     Units: Array<String>,
-    Studium: {},
-    Ausgang: {},
+    Studium: {
+        Cells: Array<any>,
+    },
+    Ausgang: {
+        Cells: Array<any>,
+    },
     Colours: Array<any>,
     IgnoreBracketsContent: true,
     IgnoreCapitalLetters: true,

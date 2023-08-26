@@ -325,8 +325,12 @@ router.post('/class/update', (req, res) => {
             res.json(Core.Database.Routine.MkError("Class title is not set!", 401));
             return;
         }
-        Core.Database.SchoolClass.Update(class_title, formteacher_username, StudyHours, outings, editing).then((result) => {
-            res.json(result);
+        Core.Database.SchoolClass.Update(class_title, formteacher_username, StudyHours, outings, editing).then(async (result) => {
+            let ClassStudents = await Core.Database.SchoolClass.GetStudents(class_title) as any[];
+            for (let i = 0; i < ClassStudents.length; i++) {
+                console.log("Updating student: " + ClassStudents[i] + " with " + outings + " outings and " + StudyHours + " study hours");
+                await Core.Database.TimeTable.UpdateAusgangeStudien(ClassStudents[i], outings, StudyHours, true);
+            }
         }).catch((err) => {
             console.error(err);
             res.json(Core.Database.Routine.MkError("An error occurred while updating class!"));
@@ -522,5 +526,44 @@ router.post('/class/create', (req, res) => {
     }).catch((err) => {
         console.error(err);
         res.json(Core.Database.Routine.MkError("An error occurred while creating class!"));
+    });
+});
+
+//POST /user/timetable/setup. this endpoint sets user editing, studien and ausgange and clas sync
+router.post('/user/timetable/setup', (req, res) => {
+    ApiLog('/user/timetable/setup', req.ip);
+    let token = req.body.token;
+    let username = req.body.username;
+    let editing = req.body.editing;
+    let studien = req.body.studien;
+    let ausgange = req.body.outings;
+    let class_sync = req.body.class_sync;
+
+    Core.Database.User.GetByToken(token).then((user : { type: string, username: string }) => {
+        if (!user) {
+            res.json(Core.Database.Routine.MkError("Invalid token!", 401));
+            return;
+        }
+        //if user is not admin and teacher and is not the user he is trying to get, return error
+        if (user.type !== "admin" && user.type !== "teacher") {
+            res.json(Core.Database.Routine.MkError("You are not authorized to edit this user's timetable!", 401));
+            return;
+        }
+        //if not all fields are filled, return error
+        if (!username || !studien || !ausgange ||class_sync  === undefined || editing === undefined) {
+            res.json(Core.Database.Routine.MkError("Not all fields are filled!", 401));
+            return;
+        }
+
+        //export async function SetupTimetable(owner: string, studien: number, ausgange: number, class_sync: boolean, editing: boolean) {
+        Core.Database.TimeTable.SetupTimetable(username, studien, ausgange, class_sync, editing).then((result) => {
+            res.json({});
+        }).catch((err) => {
+            console.error(err);
+            res.json(Core.Database.Routine.MkError("An error occurred while updating user's timetable!"));
+        });
+    }).catch((err) => {
+        console.error(err);
+        res.json(Core.Database.Routine.MkError("An error occurred while updating user's timetable!"));
     });
 });

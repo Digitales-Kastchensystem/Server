@@ -326,7 +326,7 @@ export namespace Database {
 
         export async function Create(owner: string, timetable: string, ausgange: string, studien: number, class_sync: number) {
             return new Promise((resolve, reject) => {
-                Connection.query('INSERT INTO timetable (owner, timetable, ausgange, studien, class_sync) VALUES (?, ?, ?, ?, ?)', [owner, timetable, ausgange, studien, class_sync], (err:any, results:any) => {
+                Connection.query('INSERT INTO timetable (owner, timetable, ausgange, studien, class_sync) VALUES (?, ?, ?, ?, ?)', [owner, timetable, ausgange, studien, 1], (err:any, results:any) => {
                     if (err) {
                         reject(err);
                     } else {
@@ -347,6 +347,77 @@ export namespace Database {
                 }
                 );
             });
+        }
+
+        export async function UpdateAusgangeStudien(owner: string, ausgange: string, studien: number, consider_class_sync: boolean = false) {
+            //if consider class sync is true, update only the timetable if class_sync is 1
+            if (consider_class_sync) {
+                return new Promise((resolve, reject) => {
+                    Connection.query('UPDATE timetable SET ausgange = ?, studien = ? WHERE owner = ? AND class_sync = 1', [ausgange, studien, owner], (err:any, results:any) => {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve(results);
+                        }
+                    });
+                });
+            }else{
+                return new Promise((resolve, reject) => {
+                    Connection.query('UPDATE timetable SET ausgange = ?, studien = ? WHERE owner = ?', [ausgange, studien, owner], (err:any, results:any) => {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve(results);
+                        }
+                    }
+                    );
+                });
+            }
+        }
+
+        //setup timetable for a user, it accepts username studien, ausgange and class_sync and editing
+        export async function SetupTimetable(owner: string, studien: number, ausgange: number, class_sync: boolean, editing: boolean) {
+            //convert boolean to number
+            var ClassSync = 0;
+            if (class_sync){
+                ClassSync = 1;
+                console.log("Class sync is true");
+            }
+
+            var Editing = 0;
+            if (editing){
+                Editing = 1;
+                console.log("Editing is true");
+            }
+
+            //get users timtable
+            var timetable = await TimeTable.GetByOwner(owner) as any;
+            console.log(timetable);
+
+            console.log("owner: " + owner);
+            console.log("studien: " + studien);
+            console.log("ausgange: " + ausgange);
+            console.log("class_sync: " + ClassSync);
+            console.log("editing: " + Editing);
+
+            //syncroniously update users set editing = 1 where username = owner
+            await Connection.query('UPDATE users SET editable = ? WHERE username = ?', [Editing, owner], (err:any, results:any) => {
+                if (err) {
+                    console.log(err);
+                } else {
+                    console.log("Editing set to 1");
+                }
+            });
+
+            //syncroniously update timetable set ausgange = ausgange, studien = studien, class_sync = class_sync where owner = owner
+            await Connection.query('UPDATE timetable SET ausgange = ?, studien = ?, class_sync = ? WHERE owner = ?', [ausgange, studien, ClassSync, owner], (err:any, results:any) => {
+                if (err) {
+                    console.log(err);
+                } else {
+                    console.log("Timetable updated");
+                }
+            });
+            
         }
 
         //keep ausgange and studien and class sync old values, only update timetable function
@@ -722,6 +793,7 @@ export namespace Database {
             let timetable = await TimeTable.GetByOwner(user.username) as any;
             let schoolclass = await SchoolClass.GetByTitle(user.class) as any;
             //add property to timetable
+            var TTStats = await TimeTableRoutine.CalculateTimeTableStats(username);
             timetable.Settings = {
                     Days: TimeTableConfig.Days,
                     Units: TimeTableConfig.Units,
@@ -734,6 +806,7 @@ export namespace Database {
                         IgnoreBracketsContent: TimeTableConfig.IgnoreBracketsContent,
                     }
             };
+            timetable.Stats = TTStats;
             return {
                 username: user.username,
                 email: user.email,
