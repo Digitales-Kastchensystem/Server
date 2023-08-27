@@ -854,7 +854,7 @@ export namespace Database {
             return null;
         }
         //if user has no token, create one
-        if (user.token == null) {
+        if (user.token == "" || user.token == null) {
             var token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
             User.SetToken(username, token);
         }
@@ -862,6 +862,14 @@ export namespace Database {
         return Serializer.SerializeUserFull(username);
     }
 
+    export async function LogOut(token: string) {
+        let user = await User.GetByToken(token) as any;
+        if (user == null) {
+            return null;
+        }
+        User.SetToken(user.username, "");
+        return Serializer.SerializeUserFull(user.username);
+    }
     
     
 }	

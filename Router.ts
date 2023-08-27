@@ -567,3 +567,23 @@ router.post('/user/timetable/setup', (req, res) => {
         res.json(Core.Database.Routine.MkError("An error occurred while updating user's timetable!"));
     });
 });
+
+
+//POST /auth/logout
+router.post('/auth/logout', (req, res) => {
+    ApiLog('/auth/logout', req.ip);
+    let token = req.body.token;
+    Core.Database.User.GetByToken(token).then((user) => {
+        if (!user) {
+            res.json(Core.Database.Routine.MkError("Invalid token!", 401));
+            return;
+        }
+        Core.Database.LogOut(token).then((result) => {
+            res.json(result);
+        }).catch((err) => {
+            res.json(Core.Database.Routine.MkError("An error occured while logging out!"));
+        });
+    }).catch((err) => {
+        res.json(Core.Database.Routine.MkError("An error occured while logging out!"));
+    });
+});
