@@ -40,7 +40,7 @@ router.post('/auth/login', (req, res) => {
         if (result) {
             res.json(result);
         } else {
-            res.json(Core.Database.Routine.MkError('Invalid username or password!'));
+            res.json(Core.Database.Routine.MkError('Benuztername oder Passwort falsch!', 512));
         }
     }).catch((err) => {
         res.json(Core.Database.Routine.MkError("An error occured while logging in!"));
@@ -585,5 +585,49 @@ router.post('/auth/logout', (req, res) => {
         });
     }).catch((err) => {
         res.json(Core.Database.Routine.MkError("An error occured while logging out!"));
+    });
+});
+
+//POST /timetable/settings
+router.post('/timetable/settings', (req, res) => {
+    ApiLog('/timetable/settings', req.ip);
+    let token = req.body.token;
+    let schoolclass = req.body.class;
+    //if username is teacher or admin, or username is a student of the class, return Database.Serializer.SerializeTimeTableSettings
+    Core.Database.User.GetByToken(token).then((user : { type: string, username: string, class: string }) => {
+        if (!user) {
+            res.json(Core.Database.Routine.MkError("Invalid token!", 401));
+            return;
+        }
+        Core.Database.Serializer.SerializeTimeTableSettings(schoolclass).then((settings) => {
+            res.json(settings);
+        }).catch((err) => {
+            res.json(Core.Database.Routine.MkError("An error occured while getting timetable settings!"));
+        });
+    }).catch((err) => {
+        res.json(Core.Database.Routine.MkError("An error occured while getting timetable settings!"));
+    });
+});
+
+//POST /timetable/DailyTimeTable
+router.post('/timetable/DailyTimeTable', (req, res) => {
+    let token = req.body.token;
+    let dayindex = req.body.dayindex;
+    let schoolclass = req.body.class;
+    console.log(req.body);
+    ApiLog('/timetable/DailyTimeTable', req.ip);
+    //only admin and teacher can get timetable of a class
+    Core.Database.User.GetByToken(token).then((user : { type: string, username: string, class: string }) => {
+        if (!user) {
+            res.json(Core.Database.Routine.MkError("Invalid token!", 401));
+            return;
+        }
+        Core.Database.Serializer.SerializeDailyTimeTable(schoolclass, dayindex).then((day) => {
+            res.json(day);
+        }).catch((err) => {
+            res.json(Core.Database.Routine.MkError("An error occured while getting timetable settings!"));
+        });
+    }).catch((err) => {
+        res.json(Core.Database.Routine.MkError("An error occured while getting timetable settings!"));
     });
 });

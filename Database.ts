@@ -823,6 +823,62 @@ export namespace Database {
         }
 
 
+        //serializeTimeTableOfClass
+        export async function SerializeTimeTableSettings(ClassName : string) {
+            let schoolclass = await SchoolClass.GetByTitle(ClassName) as any;
+            return {
+                Days: TimeTableConfig.Days,
+                Units: TimeTableConfig.Units,
+                Colours: {
+                    Studium: TimeTableConfig.Studium,
+                    Ausgang: TimeTableConfig.Ausgang,
+                    OtherColours: TimeTableConfig.Colours,
+                    IgnoreCapitalLetters: TimeTableConfig.IgnoreCapitalLetters,
+                    IgnoreSpaces: TimeTableConfig.IgnoreSpaces,
+                    IgnoreBracketsContent: TimeTableConfig.IgnoreBracketsContent,
+                },
+                ClassSettings: {
+                    Ausgange: schoolclass.ausgange,
+                    Studien: schoolclass.studien,
+                    Editing: schoolclass.editing,
+                }
+            };
+        }
+
+        export async function SerializeDailyTimeTable(classTitle: string, dayIndex: number) {
+            let schoolclass = await SchoolClass.GetByTitle(classTitle) as any;
+            let classStudentsList = await SchoolClass.GetStudents(classTitle) as any;
+            if (classStudentsList == null)
+                classStudentsList = [];
+            let students = [];
+            //go through all students and get their timetable
+            for (let i = 0; i < classStudentsList.length; i++) {
+                let student = await User.GetByUsername(classStudentsList[i]) as any;
+                let timetable = await TimeTable.GetByOwner(student.username) as any;
+                let day = timetable.timetable[dayIndex];
+                let studentTimeTableEntry = {
+                    username: student.username,
+                    first_name: student.first_name,
+                    last_name: student.last_name,
+                    timetable: day,
+                    class_sync: student.class_sync,
+                    editable: student.editable,
+                };
+                students.push(studentTimeTableEntry);
+            }
+            return {
+                title: schoolclass.title,
+                ausgange: schoolclass.ausgange,
+                studien: schoolclass.studien,
+                editing: schoolclass.editing,
+                students: students,
+                Units: TimeTableConfig.Units,
+            };
+        }
+
+
+
+
         export async function GetAllClasses() {
             let classes = await SchoolClass.GetAll() as any;
             let result = [];
