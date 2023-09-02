@@ -33,6 +33,7 @@ export namespace TimeTableRoutine{
         }
 
         //loop through the timetable 
+        if (!TimeTableRaw) return Stats;
         for(var i = 0; i < TimeTableRaw.length; i++){
             for(var j = 0; j < TimeTableRaw[i].length; j++){
                 //loop through timetablesettings.Studium

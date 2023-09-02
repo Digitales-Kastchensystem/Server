@@ -325,11 +325,27 @@ router.post('/class/update', (req, res) => {
             res.json(Core.Database.Routine.MkError("Class title is not set!", 401));
             return;
         }
+
+        console.log(req.body);
+
+        //if user is teacher, check, if the new formteacher of the class is the old formteacher. if not, return error
+        if (foundUser.type === "teacher") {
+            Core.Database.SchoolClass.GetByTitle(class_title).then((foundClass: { formteacher_username: string }) => {
+                if (foundClass.formteacher_username !== foundUser.username) {
+                    res.json(Core.Database.Routine.MkError("You are not authorized to update this class!", 401));
+                    return;
+                }
+            }).catch((err) => {
+                console.error(err);
+                res.json(Core.Database.Routine.MkError("An error occurred while updating class!"));
+            });
+        }
+
         Core.Database.SchoolClass.Update(class_title, formteacher_username, StudyHours, outings, editing).then(async (result) => {
             let ClassStudents = await Core.Database.SchoolClass.GetStudents(class_title) as any[];
             for (let i = 0; i < ClassStudents.length; i++) {
-                console.log("Updating student: " + ClassStudents[i] + " with " + outings + " outings and " + StudyHours + " study hours");
                 await Core.Database.TimeTable.UpdateAusgangeStudien(ClassStudents[i], outings, StudyHours, true);
+                await Core.Database.TimeTable.ToggleEditable(ClassStudents[i], editing);
             }
         }).catch((err) => {
             console.error(err);
@@ -391,7 +407,7 @@ router.post('/user/timetable/edit', (req, res) => {
     //get raw timtable and print it
     //Core.Database.TimeTable.GetRawByOwner
 
-    Core.Database.User.GetByToken(token).then((user : { type: string, username: string }) => {
+    Core.Database.User.GetByToken(token).then((user : { type: string, username: string, editable: number }) => {
         if (!user) {
             res.json(Core.Database.Routine.MkError("Invalid token!", 401));
             return;
@@ -401,6 +417,15 @@ router.post('/user/timetable/edit', (req, res) => {
             res.json(Core.Database.Routine.MkError("You are not authorized to edit this user's timetable!", 401));
             return;
         }
+
+        //editing should be enabled if user is a student and edits his own timetable
+        if (user.type === "student" && user.username === username) {
+            if (user.editable == 0) {
+                res.json(Core.Database.Routine.MkError("You are not authorized to edit this user's timetable!", 401));
+                return;
+            }
+        }
+        
         Core.Database.TimeTable.GetRawByOwner(username).then((timetable: any[][]) => {
             if (!timetable) {
                 res.json(Core.Database.Routine.MkError("User not found!", 401));
@@ -572,19 +597,23 @@ router.post('/user/timetable/setup', (req, res) => {
 //POST /auth/logout
 router.post('/auth/logout', (req, res) => {
     ApiLog('/auth/logout', req.ip);
+    console.log(req.body);
     let token = req.body.token;
     Core.Database.User.GetByToken(token).then((user) => {
         if (!user) {
             res.json(Core.Database.Routine.MkError("Invalid token!", 401));
+            console.error("Invalid token!");
             return;
         }
         Core.Database.LogOut(token).then((result) => {
             res.json(result);
         }).catch((err) => {
             res.json(Core.Database.Routine.MkError("An error occured while logging out!"));
+            console.error(err);
         });
     }).catch((err) => {
         res.json(Core.Database.Routine.MkError("An error occured while logging out!"));
+        console.error(err);
     });
 });
 
@@ -629,5 +658,16 @@ router.post('/timetable/DailyTimeTable', (req, res) => {
         });
     }).catch((err) => {
         res.json(Core.Database.Routine.MkError("An error occured while getting timetable settings!"));
+    });
+});
+
+//POST /auth/token
+router.post('/auth/token', (req, res) => {
+    ApiLog('/auth/token', req.ip);
+    let token = req.body.token;
+    Core.Database.AuthByToken(token).then((result) => {
+        res.json(result);
+    }).catch((err) => {
+        res.json(Core.Database.Routine.MkError("An error occured while logging in!"));
     });
 });

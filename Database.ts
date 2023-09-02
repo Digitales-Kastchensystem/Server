@@ -37,6 +37,18 @@ export namespace Database {
             };
         }
 
+        //make a timestamp in format YYYY-MM-DD HH:MM:SS
+        export function MkTimestamp(){
+            var date = new Date();
+            var year = date.getFullYear();
+            var month = date.getMonth()+1;
+            var day = date.getDate();
+            var hours = date.getHours();
+            var minutes = date.getMinutes();
+            var seconds = date.getSeconds();
+            return year + "/" + month + "/" + day + " um " + hours + ":" + minutes + ":" + seconds;
+        }
+
     }
 
     export async function Connect(ip:string, port:number, user:string, pass:string, db:string) {
@@ -139,7 +151,13 @@ export namespace Database {
                         if (results.length == 0) {
                             resolve(null);
                         } else {
-                            resolve(results[0]);
+                            let user = results[0];
+                            //if user has an empty token, return null
+                            if (user.token == "" || user.token == null) {
+                                resolve(null);
+                            } else {
+                                resolve(user);
+                            }
                         }
                     }
                 });
@@ -349,6 +367,18 @@ export namespace Database {
             });
         }
 
+        export async function ToggleEditable(owner: string, editable: boolean) {
+            return new Promise((resolve, reject) => {
+                Connection.query('UPDATE users SET editable = ? WHERE username = ?', [editable, owner], (err:any, results:any) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(results);
+                    }
+                });
+            });
+        }
+
         export async function UpdateAusgangeStudien(owner: string, ausgange: string, studien: number, consider_class_sync: boolean = false) {
             //if consider class sync is true, update only the timetable if class_sync is 1
             if (consider_class_sync) {
@@ -392,14 +422,6 @@ export namespace Database {
 
             //get users timtable
             var timetable = await TimeTable.GetByOwner(owner) as any;
-            console.log(timetable);
-
-            console.log("owner: " + owner);
-            console.log("studien: " + studien);
-            console.log("ausgange: " + ausgange);
-            console.log("class_sync: " + ClassSync);
-            console.log("editing: " + Editing);
-
             //syncroniously update users set editing = 1 where username = owner
             await Connection.query('UPDATE users SET editable = ? WHERE username = ?', [Editing, owner], (err:any, results:any) => {
                 if (err) {
@@ -427,7 +449,14 @@ export namespace Database {
                     if (err) {
                         reject(err);
                     } else {
-                        resolve(results);
+                        //update the user itself, set last_change to current timestamp
+                        Connection.query('UPDATE users SET last_change = ? WHERE username = ?', [Routine.MkTimestamp(), owner], (err:any, results:any) => {
+                            if (err) {
+                                reject(err);
+                            } else {
+                                resolve(results);
+                            }
+                        });
                     }
                 }
                 );
@@ -861,7 +890,7 @@ export namespace Database {
                     first_name: student.first_name,
                     last_name: student.last_name,
                     timetable: day,
-                    class_sync: student.class_sync,
+                    class_sync: timetable.class_sync,
                     editable: student.editable,
                 };
                 students.push(studentTimeTableEntry);
@@ -924,6 +953,15 @@ export namespace Database {
             return null;
         }
         User.SetToken(user.username, "");
+        console.log("User logged out");
+        return Serializer.SerializeUserFull(user.username);
+    }
+
+    export async function AuthByToken(token: string) {
+        let user = await User.GetByToken(token) as any;
+        if (user == null) {
+            return null;
+        }
         return Serializer.SerializeUserFull(user.username);
     }
     
