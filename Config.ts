@@ -52,6 +52,9 @@ export var Config = {
         log_file: 'ks_server.log',
         log_format: '[%asctime] (%levelname) - %message',
     },
+    mail:{
+        path: '/usr/sbin/sendmail',
+    },
     loaded: false,
 };
 
@@ -102,8 +105,7 @@ export function loadConfig(filename: string) {
         Config.log.log_file = config.get('Log', 'log_file');
         Config.log.log_format = config.get('Log', 'log_format');
 
-        //Config.timetable.days = config.get('School', 'days').split(',');
-        //Config.timetable.timeUnits = config.get('School', 'time_units_count')*1;
+        Config.mail.path = config.get('Mail', 'path');
 
         LoadTTConfig();
 

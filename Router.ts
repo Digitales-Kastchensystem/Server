@@ -5,11 +5,29 @@ export const router = Router();
 import {Config, SerializeSchoolPerview } from "./Config";
 import { Log, ApiLog } from './Log';
 import * as Core from "./Database";
-
+import { Mail } from './Mail';
+import { rateLimit } from 'express-rate-limit'
 
 // API Routes
 
-//General School Info
+const apiAuthLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100,
+    standardHeaders: 'draft-7', // draft-6: RateLimit-* headers; draft-7: combined RateLimit header
+	legacyHeaders: false, // X-RateLimit-* headers
+});
+
+const apiMailLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10,
+    standardHeaders: 'draft-7', // draft-6: RateLimit-* headers; draft-7: combined RateLimit header
+    legacyHeaders: false, // X-RateLimit-* headers
+});
+
+//on all /auth/* routes, use apiLimiter
+router.use('/auth/*', apiAuthLimiter);
+//on all /auth/sendreset
+router.use('/auth/sendreset', apiMailLimiter);
 
 // POST /api/school/info
 router.post('/school/info', (req, res) => {
@@ -669,5 +687,62 @@ router.post('/auth/token', (req, res) => {
         res.json(result);
     }).catch((err) => {
         res.json(Core.Database.Routine.MkError("An error occured while logging in!"));
+    });
+});
+
+//POST /auth/sendreset
+router.post('/auth/sendreset', (req, res) => {
+    ApiLog('/auth/sendreset', req.ip);
+    let username = req.body.username;
+    Core.Database.User.GetByUsername(username).then((user : { username: string }) => {
+        if (!user) {
+            res.json(Core.Database.Routine.MkError("Dieser Benutzer existiert nicht!", 512));
+            return;
+        }
+        Mail.SendResetEmail(user.username).then((result) => {
+            res.json(result);
+        }).catch((err) => {
+            console.log(err);
+            res.json(Core.Database.Routine.MkError("Ein Fehler ist aufgetreten! Bitte versuchen Sie es später erneut!"));
+        });
+    }).catch((err) => {
+        console.log(err);
+        res.json(Core.Database.Routine.MkError("Ein Fehler ist aufgetreten! Bitte versuchen Sie es später erneut!"));
+    });
+});
+
+//POST /auth/reset
+router.post('/auth/checkreset', (req, res) => {
+    ApiLog('/auth/checkreset', req.ip);
+    let username = req.body.username;
+    let code = req.body.code;
+    Mail.CheckReset(username, code).then((result:any) => {
+        if (result) {
+            res.json({});
+        } else {
+            res.json(Core.Database.Routine.MkError("Der Code ist ungültig!", 512));
+        }
+    }).catch((err:any) => {
+        res.json(Core.Database.Routine.MkError("Der Code ist ungültig!", 512));
+    });
+});
+
+//POST /auth/resetpassword
+router.post('/auth/resetpassword', async(req, res) => {
+    ApiLog('/auth/resetpassword', req.ip);
+    let username = req.body.username;
+    let code = req.body.code;
+    let password = req.body.password;
+    let isok = await Mail.CheckReset(username, code);
+    if (!isok) {
+        res.json(Core.Database.Routine.MkError("Der Code ist ungültig!", 512));
+        return;
+    }
+    await Mail.UseReset(username, code);
+    Core.Database.User.SetPassword(username, password).then((result) => {
+        res.json(result);
+    }).catch((err) => {
+        console.log(err);
+        res.json(Core.Database.Routine.MkError("Ein Fehler ist aufgetreten! Bitte versuchen Sie es später erneut!"));
     });
 });

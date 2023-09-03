@@ -164,6 +164,7 @@ export namespace Database {
             });
         }
 
+
         //on creating a user, if user is a student, get the class, create a timetable for him and for timetable ausgange and studien get the class ausgange and studien
         export async function Create(username: string, email: string, first_name: string, last_name: string, last_change: string, editable: number, colorful: number, type: string, class_title: string, password: string) {
             if (type == 'student') {

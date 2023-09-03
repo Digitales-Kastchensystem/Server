@@ -8,6 +8,7 @@ import *  as Core from "./Database";
 import { loadConfig, Config } from "./Config";
 import { router } from './Router';
 import { Log } from './Log';
+import { Mail } from './Mail';
 
 const app = express();
 app.use(cors());
@@ -30,6 +31,8 @@ if(!loadConfig(config_file)) {
     Log(`Error loading config file ${config_file}!`, 'ERROR');
     process.exit(1);
 }
+
+if(Mail.Init()) Log("Initialized mail transporter");
 
 
 Core.Database.Connect(Config.db.host, Config.db.port, Config.db.username, Config.db.password, Config.db.database).then((db) => {
