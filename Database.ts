@@ -90,6 +90,23 @@ export namespace Database {
             });
         }
 
+        //get by email
+        export async function GetByEmail(email: string) {
+            return new Promise((resolve, reject) => {
+                Connection.query('SELECT * FROM users WHERE email = ?', [email], (err:any, results:any) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        if (results.length == 0) {
+                            resolve(null);
+                        } else {
+                            resolve(results[0]);
+                        }
+                    }
+                });
+            });
+        }
+
         //this function returns array of usernames of all users
         export async function GetAll() {
             return new Promise((resolve, reject) => {
@@ -482,6 +499,22 @@ export namespace Database {
                             resolve(null);
                         } else {
                             resolve(results[0]);
+                        }
+                    }
+                });
+            });
+        }
+
+        export async function GetLastCreated() {
+            return new Promise((resolve, reject) => {
+                Connection.query('SELECT title FROM classes ORDER BY id DESC LIMIT 1', (err:any, results:any) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        if (results.length == 0) {
+                            resolve(null);
+                        } else {
+                            resolve(results[0].title);
                         }
                     }
                 });

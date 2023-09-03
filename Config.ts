@@ -55,6 +55,9 @@ export var Config = {
     mail:{
         path: '/usr/sbin/sendmail',
     },
+    substitute:{
+        email_regex: "^[A-Za-z]+@specificemaildomain\.com$",
+    },
     loaded: false,
 };
 
@@ -106,6 +109,8 @@ export function loadConfig(filename: string) {
         Config.log.log_format = config.get('Log', 'log_format');
 
         Config.mail.path = config.get('Mail', 'path');
+
+        Config.substitute.email_regex = config.get('Substitute', 'email_regex');
 
         LoadTTConfig();
 

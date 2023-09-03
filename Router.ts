@@ -746,3 +746,15 @@ router.post('/auth/resetpassword', async(req, res) => {
         res.json(Core.Database.Routine.MkError("Ein Fehler ist aufgetreten! Bitte versuchen Sie es später erneut!"));
     });
 });
+
+//POST /auth/createtmpuser
+router.post('/auth/createtmpuser', (req, res) => {
+    ApiLog('/auth/createtmpuser', req.ip);
+    let email = req.body.email;
+    Mail.CreateTmpUser(email).then((result) => {
+        res.json(result);
+    }).catch((err:any) => {
+        console.log(err);
+        res.json(Core.Database.Routine.MkError("Ein Fehler ist aufgetreten! Bitte versuchen Sie es später erneut!", 512));
+    });
+});
