@@ -6,18 +6,12 @@
 
 <p align="center">
   <h1 align="center">Digitales Kästchensystem Server</h1>
-  Digitales Kästchensystem ist ein innovatives System für Schulen mit Nachmittagsunterricht. Schüler können ihren eigenen Nachmittagsplan erstellen und verwalten, während Lehrer und Administratoren wertvolle Einblicke in den Fortschritt jedes Schülers erhalten. Das System sammelt Statistiken zu den Aktivitäten jedes Schülers und bietet gezielte Unterstützung, wo sie benötigt wird. Mit der einfachen Benutzeroberfläche und automatisierten Funktionen sparen Lehrer und Administratoren Zeit, während Schüler ihr eigenes Lern- und Freizeitmanagement verbessern können.
+  Digitales Kästchensystem ist ein innovatives System für Schulen mit Nachmittagsunterricht. Schüler können ihren eigenen Nachmittagsplan erstellen und verwalten, während Lehrer und Administratoren wertvolle Einblicke in den Fortschritt jedes Schülers erhalten. Das System sammelt Statistiken zu den Aktivitäten jedes Schülers. Mit der einfachen Benutzeroberfläche und automatisierten Funktionen sparen Lehrer und Administratoren Zeit, während Schüler ihr eigenes Lern- und Freizeitmanagement verbessern können.
 </p>
 
 ## Über dieses Repository
 
-In dieser Repository finden Sie den Quellcode für den Kästchensystem-Server, der es Schulen ermöglicht, ihre eigene Instanz des Kästchensystems zu installieren und zu verwalten. Der Quellcode ist in einer gut strukturierten Weise organisiert, so dass Schulen ihn leicht verstehen und an ihre spezifischen Bedürfnisse anpassen können.
-
-Die Installation des Kästchensystem-Servers ist einfach und unkompliziert. Die Schulen können den Server auf einer Vielzahl von Plattformen wie Linux, macOS oder Windows installieren. Die Installation des Servers ermöglicht den Schulen eine vollständige Kontrolle über die Verwaltung ihrer Schülerdaten.
-
-Das Kästchensystem sammelt und speichert Schülerdaten auf dem Schulserver, um die Verwaltung des Nachmittagsunterrichts zu erleichtern. Der Datenschutz ist ein wichtiger Aspekt des Kästchensystems. Die Schülerdaten werden auf dem Schulserver gespeichert und die Schulen sind dafür verantwortlich, sicherzustellen, dass Datenschutzbestimmungen eingehalten werden.
-
-Zusammenfassend bietet diese Repository eine Möglichkeit für Schulen, ihre eigene Instanz des Kästchensystems zu installieren und zu verwalten. Der Quellcode ist leicht zu verstehen und anpassbar. Die Datenschutzbestimmungen werden eingehalten, indem Schülerdaten auf dem Schulserver gespeichert werden.
+Hier finden sie den Quellcode für den Server des Kästchensystems. Dieser Server ist für die Verwaltung der Datenbank und die Kommunikation mit den Clients zuständig. Hier ist keine Benutzeroberfläche enthalten. Für die Benutzeroberfläche besuchen Sie bitte das [Web-Repository](https://github.com/Digitales-Kastchensystem/Web).
 
 ## Installation aus Quellcode
 Die Installation des Kästchensystem-Servers verlangt das Herunterladen und das Compilieren des Quellcodes für die jeweilige Plattform.
@@ -35,15 +29,14 @@ Die Installation besteht aus folgenden Schritten:
     - [Allgemeine Serverkonfiguration](#Allgemeine-Serverkonfiguration)
     - [Datenbankkonfiguration](#Datenbankkonfiguration)
     - [Schuldaten](#Schuldaten)
-    - [Sicherheit](#Sicherheit)
     - [Logging](#Log-Konfiguration)
 4. [Starten des Servers](#Starten-des-Servers)
 
 
 ### Voraussetzungen
-- [Node.js](https://nodejs.org/en/) (Version 18.0.0 oder höher)
+- [Node.js Runtime](https://nodejs.org/en/) (Version 18.0.0 oder höher)
 - [NPM](https://www.npmjs.com/) (Version 7.0.0 oder höher)
-- [SurrealDB](https://surrealdb.com/) (Version 1.0.0 oder höher)
+- [MySQL Datenbank](https://www.mysql.com/) (Version 1.0.0 oder höher)
 - Statische IP-Adresse (Empfohlen)
 
 Es ist empfehlenswert, den Server auf einem Linux-Server zu installieren. Die Installation auf einem Windows-Server ist ebenfalls möglich, jedoch nicht getestet und auf eigene Gefahr.
@@ -57,27 +50,38 @@ git clone https://github.com/Digitales-Kastchensystem/Server.git
 #### Compilieren des Quellcodes
 1. Installation der Abhängigkeiten
 ```bash
-npm install
+make install-deps
 ```
 
 2. Kompilieren des Quellcodes
 ```bash
-npm run build
+npm build
 ```
 
-Die Kompilierte Anwendung befindet sich im Ordner `./dist`.
+3. Sie können alle Schritte mit einem Befehl ausführen:
+```bash
+make
+```
+
+4. Vor dem Starten des Servers müssen Sie die Konfiguration anpassen. (Siehe [Konfigurieren des Servers](#Konfigurieren-des-Servers))
+Sie müssen vor allem die Datenbankk vorbereiten. Dazu müssen Sie die `Database.sql` Datei in Ihre Datenbank importieren.
+Es is empfehlenswert, eine Datenbank Oberfläche wie [phpMyAdmin](https://www.phpmyadmin.net/) zu verwenden.
+
+Die Kompilierte Anwendung befindet sich im Ordner `./build`.
 
 ### Konfigurieren des Servers
-Öffnen Sie die Datei `./dist/config.cfg` in einem Texteditor. Und passen Sie die Konfiguration an Ihre Bedürfnisse an.
+Öffnen Sie die Datei `./build/config.cfg` in einem Texteditor. Und passen Sie die Konfiguration an Ihre Bedürfnisse an.
 Mehr zu den einzelnen Konfigurationsoptionen finden Sie in der [Konfigurationsdokumentation](#Konfigurieren).
-
 
 
 ### Starten des Servers
 ```bash 
-bash ./dist/start.sh
+bash ./build/start.sh
 ```
 
+###Erste anmeldung
+Nachdem Sie den Server gestartet haben, können Sie sich mit dem Benutzer `admin` und dem Passwort `admin` anmelden.
+> **Warning** Die Für die Anmeldung muss die Benutzeroberfläche installiert sein. (Siehe [Web-Repository](https://github.com/Digitales-Kastchensystem/Web))
 
 
 ## Konfigurieren
@@ -115,17 +119,40 @@ Die Konfigurationsdatei `config.cfg` enthält Einstellungen für das System für
 
 
 
-### Sicherheit
+### Supplierung
 
-- `allow_password_reset`: Gibt an, ob Passwort-Reset-Funktionen verfügbar sein sollen.
-- `allow_substitute_teacher`: Gibt an, ob ein Lehrer einen Vertretungslehrer ernennen kann.
-- `allow_substitute_teacher_edit`: Gibt an, ob der Vertretungslehrer den Stundenplan bearbeiten kann.
-- `allow_teacher_view_all`: Gibt an, ob alle Lehrer alle Stundenpläne sehen können.
-- `allow_teacher_edit_all`: Gibt an, ob alle Lehrer alle Stundenpläne bearbeiten können.
-
-
+- `email_regex`: Gibt an, welchem Muster E-Mail-Adressen für Supplierlehrer entsprechen müssen.
 
 ### Log-Konfiguration
 
 - `log_file`: Der Dateipfad für das Log-File.
 - `log_format`: Das Format für Log-Einträge.
+
+## Konfiguration für Zeitmanagement
+Die Konfigurationsdatei `TimeTableConfig.json` enthält die Zeitplaneinstellungen, Zeitkästchen und Farbenkonfiguration:
+
+- `IgnoreCapitalLetters`: Gibt an, ob Groß- und Kleinschreibung beim ausrechnen von Schülerstatistiken ignoriert werden soll.
+  - Zum Beispiel: STD und Std werden gleich als Studium gezählt.
+- `IgnoreSpaces`: Gibt an, ob Leerzeichen beim ausrechnen von Schülerstatistiken ignoriert werden soll.
+  - Zum Beispiel: Studium und Studi um werden gleich als Studium gezählt.
+- `IgnoreBracketsContent`: Gibt an, ob der Inhalt von Klammern beim ausrechnen von Schülerstatistiken ignoriert werden soll.
+  - Zum Beispiel: Studium (WPF) und Studium (Nachhilfe) werden gleich als Studium gezählt.
+
+- `Studium`: Farb- und Markereinstellungen für das Studium.
+  - Aus Start- und Endcolor wird vom ui ein gradient generiert.
+  - `Cells`: Ist die Liste der Inhalte der Zeitkästchen, die als Studium gezählt werden sollen.
+
+- `Ausgang`: Farb- und Markereinstellungen für das Ausgangszeitkästchen.
+  - Aus Start- und Endcolor wird vom ui ein gradient generiert.
+  - `Cells`: Ist die Liste der Inhalte der Zeitkästchen, die als Ausgang gezählt werden sollen.
+
+- `Colours`: Liste der Inhalte der Zeitkästchen, die mit jeweiligem gradient markiert werden sollen.
+  - `Cells`: Der Name des Zeitkästchens.
+  - `StartColor`: Die Startfarbe des gradients.
+  - `EndColor`: Die Endfarbe des gradients.
+
+- `Days`: Liste der Wochentage, an denen das Zeitmanagement aktiv ist.
+
+- `Units`: Liste der Zeitkästchen, die in der Zeitplanung angezeigt werden sollen.
+  - `Start`: Die Startzeit des Zeitkästchens.
+  - `End`: Die Endzeit des Zeitkästchens.
