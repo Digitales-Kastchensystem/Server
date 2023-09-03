@@ -751,6 +751,12 @@ router.post('/auth/resetpassword', async(req, res) => {
 router.post('/auth/createtmpuser', (req, res) => {
     ApiLog('/auth/createtmpuser', req.ip);
     let email = req.body.email;
+    //get regex for tmp user email
+    let regex = new RegExp(Config.substitute.email_regex);
+    if (!regex.test(email)) {
+        res.json(Core.Database.Routine.MkError("Die E-Mail Adresse ist ungültig!", 512));
+        return;
+    }
     Mail.CreateTmpUser(email).then((result) => {
         res.json(result);
     }).catch((err:any) => {
