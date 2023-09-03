@@ -12,4 +12,4 @@ build:
 	@cp TimeTableConfig.json build/TimeTableConfig.json
 	@cp -r public build/public
 	@echo "#!/bin/bash" > build/start.sh
-	@echo "node ./index.js" > build/start.sh
+	@echo "node ./server.js" > build/start.sh
