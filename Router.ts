@@ -764,3 +764,30 @@ router.post('/auth/createtmpuser', (req, res) => {
         res.json(Core.Database.Routine.MkError("Ein Fehler ist aufgetreten! Bitte versuchen Sie es später erneut!", 512));
     });
 });
+
+
+//post /getstats
+router.post('/getstats', (req, res) => {
+    ApiLog('/getstats', req.ip);
+    let token = req.body.token;
+    console.log(req.body);
+    Core.Database.User.GetByToken(token).then((user : { type: string, username: string }) => {
+        if (!user) {
+            res.json(Core.Database.Routine.MkError("Invalid token!", 401));
+            return;
+        }
+        if (user.type !== "admin") {
+            res.json(Core.Database.Routine.MkError("You are not authorized to get stats!", 401));
+            return;
+        }
+        Core.Database.CalculateStats().then((result) => {
+            res.json(result);
+        }).catch((err) => {
+            console.log(err);
+            res.json(Core.Database.Routine.MkError("Ein Fehler ist aufgetreten! Bitte versuchen Sie es später erneut!", 512));
+        });
+    }).catch((err) => {
+        console.log(err);
+        res.json(Core.Database.Routine.MkError("Ein Fehler ist aufgetreten! Bitte versuchen Sie es später erneut!", 512));
+    });
+});

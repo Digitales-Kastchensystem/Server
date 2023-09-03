@@ -48,6 +48,11 @@ export var Config = {
         days: Array<String>,
         timeUnits: 12,
     },
+    info:{
+        Software: 'Digitales Kästchensystem Server',
+        Version: '3.0.15 beta',
+        Build: '03/09/2023',
+    },
     log: {
         log_file: 'ks_server.log',
         log_format: '[%asctime] (%levelname) - %message',

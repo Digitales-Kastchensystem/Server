@@ -2,7 +2,8 @@
 import * as mysql from 'mysql';
 import { ApiLog, Log } from './Log';
 import {TimeTableRoutine}  from './TimeTable';
-import { TimeTableConfig } from './Config';
+import { Config, TimeTableConfig } from './Config';
+import os from 'os';
 
 
 export namespace Database {
@@ -480,9 +481,6 @@ export namespace Database {
                 );
             });
         }
-
-
-
 
     }
 
@@ -998,6 +996,65 @@ export namespace Database {
         }
         return Serializer.SerializeUserFull(user.username);
     }
+
+    export async function CountUsersByType(type: string) {
+        return new Promise((resolve, reject) => {
+            Connection.query('SELECT COUNT(*) FROM users WHERE type = ?', [type], (err:any, results:any) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(results[0]['COUNT(*)']);
+                }
+            });
+        });
+    }
+
+
+    function getHostInfo() {
+        return {
+            platform: os.platform(),
+            architecture: os.arch(),
+            hostname: os.hostname(),
+            totalMemory: os.totalmem(),
+            freeMemory: os.freemem(),
+            cpus: os.cpus(),
+        };
+    }
+
+    function getProcessInfo() {
+        const nodeVersion = process.version;
+
+        // Get memory usage statistics
+        const memoryUsage = process.memoryUsage();
+
+        const runtimeInfo = {
+            nodeVersion,
+            memoryUsage,
+        };
+
+        return runtimeInfo;
+    }
+
+
+
     
+    //Calculate stats: total users, total classes, total students, total teachers,
+    export async function CalculateStats() {
+        var Users = await User.GetAll() as any;
+        var Classes = await SchoolClass.GetAll() as any;
+        var Students = await CountUsersByType('student') as any;
+        var Teachers = await CountUsersByType('teacher') as any;
+        var Admins = await CountUsersByType('admin') as any;
+        return {
+            users: Users.length,
+            classes: Classes.length,
+            students: Students.length,
+            teachers: Teachers.length,
+            admins: Admins.length,
+            info: Config.info,
+            host: getHostInfo(),
+            process: getProcessInfo(),
+        };
+    }
     
 }	
