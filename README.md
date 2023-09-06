@@ -99,7 +99,7 @@ Die Konfigurationsdatei `config.cfg` enthält Einstellungen für das System für
 
 ### Datenbankkonfiguration
 
-- `host`: Die IP-Adresse oder der Hostname des Datenbankservers (SurrealDB)
+- `host`: Die IP-Adresse oder der Hostname des Datenbankservers (mysql Datenbank. z.B. MariaDB).
 - `port`: Der Port, auf dem die Datenbank läuft.
 - `username`: Der Benutzername, mit dem auf die Datenbank zugegriffen werden soll.
 - `password`: Das Passwort für den Benutzer.
