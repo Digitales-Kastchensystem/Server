@@ -344,7 +344,7 @@ router.post('/class/update', (req, res) => {
             return;
         }
 
-        console.log(req.body);
+        //console.log(req.body);
 
         //if user is teacher, check, if the new formteacher of the class is the old formteacher. if not, return error
         if (foundUser.type === "teacher") {
@@ -417,7 +417,7 @@ router.post('/user/timetable/edit', (req, res) => {
     let username = req.body.username;
     let value = req.body.value;
 
-    //console.log(req.body);
+    ////console.log(req.body);
     
     //return;
     ApiLog('/user/timetable/edit', req.ip);
@@ -480,7 +480,7 @@ router.post('/user/delete', (req, res) => {
             return;
         }
         //if user is not admin, return error
-        console.log(foundUser);
+        //console.log(foundUser);
         if (foundUser.type !== "admin") {
             res.json(Core.Database.Routine.MkError("You are not authorized to delete users!", 401));
             return;
@@ -557,7 +557,7 @@ router.post('/class/create', (req, res) => {
         //if class_title is not set, return error
         if (!class_title || !formteacher_username || !StudyHours || !outings) {
             res.json(Core.Database.Routine.MkError("Not all fields are filled!", 401));
-            console.log(class_title, formteacher_username, StudyHours, outings);
+            //console.log(class_title, formteacher_username, StudyHours, outings);
             return;
         }
         Core.Database.SchoolClass.Create(formteacher_username, class_title, StudyHours, outings, editing).then(async (result) => {
@@ -615,11 +615,11 @@ router.post('/user/timetable/setup', (req, res) => {
 //POST /auth/logout
 router.post('/auth/logout', (req, res) => {
     ApiLog('/auth/logout', req.ip);
-    console.log(req.body);
+    //console.log(req.body);
     let token = req.body.token;
     Core.Database.User.GetByToken(token).then((user) => {
         if (!user) {
-            res.json(Core.Database.Routine.MkError("Invalid token!", 401));
+            res.json(Core.Database.Routine.MkError("Invalid token!", 512));
             console.error("Invalid token!");
             return;
         }
@@ -661,7 +661,7 @@ router.post('/timetable/DailyTimeTable', (req, res) => {
     let token = req.body.token;
     let dayindex = req.body.dayindex;
     let schoolclass = req.body.class;
-    console.log(req.body);
+    //console.log(req.body);
     ApiLog('/timetable/DailyTimeTable', req.ip);
     //only admin and teacher can get timetable of a class
     Core.Database.User.GetByToken(token).then((user : { type: string, username: string, class: string }) => {
@@ -702,11 +702,11 @@ router.post('/auth/sendreset', (req, res) => {
         Mail.SendResetEmail(user.username).then((result) => {
             res.json(result);
         }).catch((err) => {
-            console.log(err);
+            //console.log(err);
             res.json(Core.Database.Routine.MkError("Ein Fehler ist aufgetreten! Bitte versuchen Sie es später erneut!"));
         });
     }).catch((err) => {
-        console.log(err);
+        //console.log(err);
         res.json(Core.Database.Routine.MkError("Ein Fehler ist aufgetreten! Bitte versuchen Sie es später erneut!"));
     });
 });
@@ -742,7 +742,7 @@ router.post('/auth/resetpassword', async(req, res) => {
     Core.Database.User.SetPassword(username, password).then((result) => {
         res.json(result);
     }).catch((err) => {
-        console.log(err);
+        //console.log(err);
         res.json(Core.Database.Routine.MkError("Ein Fehler ist aufgetreten! Bitte versuchen Sie es später erneut!"));
     });
 });
@@ -760,7 +760,7 @@ router.post('/auth/createtmpuser', (req, res) => {
     Mail.CreateTmpUser(email).then((result) => {
         res.json(result);
     }).catch((err:any) => {
-        console.log(err);
+        //console.log(err);
         res.json(Core.Database.Routine.MkError("Ein Fehler ist aufgetreten! Bitte versuchen Sie es später erneut!", 512));
     });
 });
@@ -770,7 +770,7 @@ router.post('/auth/createtmpuser', (req, res) => {
 router.post('/getstats', (req, res) => {
     ApiLog('/getstats', req.ip);
     let token = req.body.token;
-    console.log(req.body);
+    //console.log(req.body);
     Core.Database.User.GetByToken(token).then((user : { type: string, username: string }) => {
         if (!user) {
             res.json(Core.Database.Routine.MkError("Invalid token!", 401));
@@ -783,11 +783,11 @@ router.post('/getstats', (req, res) => {
         Core.Database.CalculateStats().then((result) => {
             res.json(result);
         }).catch((err) => {
-            console.log(err);
+            //console.log(err);
             res.json(Core.Database.Routine.MkError("Ein Fehler ist aufgetreten! Bitte versuchen Sie es später erneut!", 512));
         });
     }).catch((err) => {
-        console.log(err);
+        //console.log(err);
         res.json(Core.Database.Routine.MkError("Ein Fehler ist aufgetreten! Bitte versuchen Sie es später erneut!", 512));
     });
 });

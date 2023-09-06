@@ -14,4 +14,4 @@ RUN make
 
 EXPOSE 8080
 
-RUN bash ./build/start.sh
+RUN node Server/build/server.js
