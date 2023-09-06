@@ -361,9 +361,13 @@ router.post('/class/update', (req, res) => {
 
         Core.Database.SchoolClass.Update(class_title, formteacher_username, StudyHours, outings, editing).then(async (result) => {
             let ClassStudents = await Core.Database.SchoolClass.GetStudents(class_title) as any[];
-            for (let i = 0; i < ClassStudents.length; i++) {
-                await Core.Database.TimeTable.UpdateAusgangeStudien(ClassStudents[i], outings, StudyHours, true);
-                await Core.Database.TimeTable.ToggleEditable(ClassStudents[i], editing);
+            try{
+                for (let i = 0; i < ClassStudents.length; i++) {
+                    await Core.Database.TimeTable.UpdateAusgangeStudien(ClassStudents[i], outings, StudyHours, true);
+                    await Core.Database.TimeTable.ToggleEditable(ClassStudents[i], editing);
+                }
+            }catch(err){
+                ClassStudents = [];
             }
         }).catch((err) => {
             console.error(err);

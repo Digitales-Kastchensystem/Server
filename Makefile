@@ -5,7 +5,7 @@ all:
 cleanup:
 	@rm -rf build
 install-deps:
-	@npm install
+	@npm install -g
 build:
 	@npm run build
 	@cp config.cfg build/config.cfg
