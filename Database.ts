@@ -777,6 +777,7 @@ export namespace Database {
 
         export async function SerializeUserFull(username : string) {
             let user = await User.GetByUsername(username) as any;
+            if (user == null) return {};
             let timetable = null;
             if (user.type == 'student') {
                 timetable = await TimeTable.GetByOwner(user.username) as any;
