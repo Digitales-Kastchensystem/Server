@@ -6,6 +6,7 @@ cleanup:
 	@rm -rf build
 install-deps:
 	@npm install -g
+	@npm i --save-dev @types/node
 build:
 	@npm run build
 	@cp config.cfg build/config.cfg
