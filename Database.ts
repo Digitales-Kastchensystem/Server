@@ -1,5 +1,5 @@
 //import mysql 
-import * as mysql from 'mysql';
+import * as mysql from 'mysql2';
 import { ApiLog, Log } from './Log';
 import {TimeTableRoutine}  from './TimeTable';
 import { Config, TimeTableConfig } from './Config';
@@ -52,24 +52,21 @@ export namespace Database {
 
     }
 
-    export async function Connect(ip:string, port:number, user:string, pass:string, db:string) {
-        return new Promise((resolve, reject) => {
-            const connection = mysql.createConnection({
-                host: ip,
-                port: port,
-                user: user,
-                password: pass,
-                database: db,
-            });
-            connection.connect((err:any) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(connection);
-                }
-            });
+  
+
+    export async function Connect(ip: string, port: number, user: string, pass: string, db: string) {
+        const connection = await mysql.createConnection({
+          host: ip,
+          port: port,
+          user: user,
+          password: pass,
+          database: db,
+          waitForConnections: true, // Enable automatic reconnection
+          connectionLimit: 32, // Adjust according to your needs
         });
-    }
+      
+        return connection;
+      }
 
     //user schema: id	username	email	first_name	last_name	last_change	editable	colorful	type	class	password	token
 
@@ -111,7 +108,7 @@ export namespace Database {
         //this function returns array of usernames of all users
         export async function GetAll() {
             return new Promise((resolve, reject) => {
-                Connection.query('SELECT username FROM users', (err:any, results:any) => {
+                Connection.query('SELECT username FROM users ORDER BY last_name ASC', (err:any, results:any) => {
                     if (err) {
                         reject(err);
                     } else {
@@ -588,7 +585,7 @@ export namespace Database {
         //get all students from a class as array of usernames
         export async function GetStudents(class_title: string) {
             return new Promise((resolve, reject) => {
-                Connection.query('SELECT * FROM users WHERE type = "student" AND class = ?', [class_title], (err:any, results:any) => {
+                Connection.query('SELECT * FROM users WHERE type = "student" AND class = ? ORDER BY last_name ASC', [class_title], (err:any, results:any) => {
                     if (err) {
                         reject(err);
                     } else {
