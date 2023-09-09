@@ -15,6 +15,7 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use('/', router);
+app.set('trust proxy', true);
 
 let config_file = 'config.cfg';
 
