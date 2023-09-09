@@ -363,12 +363,13 @@ router.post('/class/update', (req, res) => {
             let ClassStudents = await Core.Database.SchoolClass.GetStudents(class_title) as any[];
             try{
                 for (let i = 0; i < ClassStudents.length; i++) {
-                    await Core.Database.TimeTable.UpdateAusgangeStudien(ClassStudents[i], outings, StudyHours, true);
-                    await Core.Database.TimeTable.ToggleEditable(ClassStudents[i], editing);
+                    Core.Database.TimeTable.UpdateAusgangeStudien(ClassStudents[i], outings, StudyHours, true);
+                    Core.Database.TimeTable.ToggleEditable(ClassStudents[i], editing);
                 }
             }catch(err){
                 ClassStudents = [];
             }
+            res.json(result);
         }).catch((err) => {
             console.error(err);
             res.json(Core.Database.Routine.MkError("An error occurred while updating class!"));
