@@ -149,14 +149,14 @@ router.post('/users/create', (req, res) => {
 
         //if not all fields are filled, return error
         if (!user.username || !user.first_name || !user.last_name || !user.password || !user.email || !user.class_title || !user.type) {
-            res.json(Core.Database.Routine.MkError("Not all fields are filled!", 401));
+            res.json(Core.Database.Routine.MkError("Not all fields are filled!"));
             return;
         }
 
         //if user already exists, return error
         Core.Database.User.GetByUsername(user.username).then((foundUser) => {
             if (foundUser) {
-                res.json(Core.Database.Routine.MkError("User already exists!", 401));
+                res.json(Core.Database.Routine.MkError("User already exists!"));
                 return;
             }
         }).catch((err) => {
@@ -193,7 +193,7 @@ router.post('/user/get', (req, res) => {
         }
         Core.Database.Serializer.SerializeUserPrevireFull(username).then((user) => {
             if (!user) {
-                res.json(Core.Database.Routine.MkError("User not found!", 401));
+                res.json(Core.Database.Routine.MkError("User not found!"));
                 return;
             }
             res.json(user);
@@ -224,7 +224,7 @@ router.post('/user/update', async(req, res) => {
         }
         //if not all fields are filled, return error
         if (!user.username || !user.first_name || !user.last_name || !user.email || !user.class_title || !user.type) {
-            res.json(Core.Database.Routine.MkError("Not all fields are filled!", 401));
+            res.json(Core.Database.Routine.MkError("Not all fields are filled!"));
             return;
         }
         //if user.last_change or user.editable or user.colorful are not set, get user by username and set them to the old values
@@ -272,7 +272,7 @@ router.post('/user/update-password', (req, res) => {
         }
         //if password is not set, return error
         if (!password) {
-            res.json(Core.Database.Routine.MkError("Password is not set!", 401));
+            res.json(Core.Database.Routine.MkError("Password is not set!"));
             return;
         }
         Core.Database.User.SetPassword(username, password).then((result) => {
@@ -340,7 +340,7 @@ router.post('/class/update', (req, res) => {
         }
         //if class_title is not set, return error
         if (!class_title) {
-            res.json(Core.Database.Routine.MkError("Class title is not set!", 401));
+            res.json(Core.Database.Routine.MkError("Class title is not set!"));
             return;
         }
 
@@ -397,7 +397,7 @@ router.post('/user/timetable/get', (req, res) => {
         }
         Core.Database.Serializer.SerializeStudentTimeTable(username).then((timetable) => {
             if (!timetable) {
-                res.json(Core.Database.Routine.MkError("User not found!", 401));
+                res.json(Core.Database.Routine.MkError("User not found!"));
                 return;
             }
             res.json(timetable);
@@ -491,7 +491,7 @@ router.post('/user/delete', (req, res) => {
         }
         //if username is not set, return error
         if (!username) {
-            res.json(Core.Database.Routine.MkError("Username is not set!", 401));
+            res.json(Core.Database.Routine.MkError("Username is not set!"));
             return;
         }
         Core.Database.User.DeleteUser(username).then((result) => {
@@ -524,7 +524,7 @@ router.post('/class/delete', (req, res) => {
         }
         //if class_title is not set, return error
         if (!class_title) {
-            res.json(Core.Database.Routine.MkError("Class title is not set!", 401));
+            res.json(Core.Database.Routine.MkError("Class title is not set!"));
             return;
         }
         Core.Database.SchoolClass.Delete(class_title).then((result) => {
@@ -560,7 +560,7 @@ router.post('/class/create', (req, res) => {
         }
         //if class_title is not set, return error
         if (!class_title || !formteacher_username || !StudyHours || !outings) {
-            res.json(Core.Database.Routine.MkError("Not all fields are filled!", 401));
+            res.json(Core.Database.Routine.MkError("Not all fields are filled!"));
             //console.log(class_title, formteacher_username, StudyHours, outings);
             return;
         }
@@ -598,7 +598,7 @@ router.post('/user/timetable/setup', (req, res) => {
         }
         //if not all fields are filled, return error
         if (!username || !studien || !ausgange ||class_sync  === undefined || editing === undefined) {
-            res.json(Core.Database.Routine.MkError("Not all fields are filled!", 401));
+            res.json(Core.Database.Routine.MkError("Not all fields are filled!"));
             return;
         }
 

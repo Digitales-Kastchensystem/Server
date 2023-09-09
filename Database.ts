@@ -1,5 +1,5 @@
 //import mysql 
-import * as mysql from 'mysql2';
+import * as mysql from 'mysql2/promise';
 import { ApiLog, Log } from './Log';
 import {TimeTableRoutine}  from './TimeTable';
 import { Config, TimeTableConfig } from './Config';
