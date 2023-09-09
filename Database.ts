@@ -1,5 +1,5 @@
 //import mysql 
-import * as mysql from 'mysql2/promise';
+import * as mysql from 'mysql';
 import { ApiLog, Log } from './Log';
 import {TimeTableRoutine}  from './TimeTable';
 import { Config, TimeTableConfig } from './Config';
@@ -61,8 +61,6 @@ export namespace Database {
           user: user,
           password: pass,
           database: db,
-          waitForConnections: true, // Enable automatic reconnection
-          connectionLimit: 32, // Adjust according to your needs
         });
       
         return connection;
