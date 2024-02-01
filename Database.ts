@@ -62,6 +62,12 @@ export namespace Database {
           password: pass,
           database: db,
         });
+
+        //on connection error, log it
+        connection.on('error', function(err) {
+            console.log(err.code); // 'ER_BAD_DB_ERROR'
+            console.log(err.fatal); // true
+        });
       
         return connection;
       }
@@ -314,6 +320,18 @@ export namespace Database {
             });
         }
 
+        export async function SetEditing(id: string, editing: boolean) {
+            return new Promise((resolve, reject) => {
+                Connection.query('UPDATE users SET editable = ? WHERE username = ?', [editing, id], (err:any, results:any) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(results);
+                    }
+                });
+            });
+        }
+
     }
     
     // class schema: 	id	owner	timetable(needs to be parsed, because this is a text containing json)	ausgange	studien	class_sync	
@@ -425,13 +443,11 @@ export namespace Database {
             var ClassSync = 0;
             if (class_sync){
                 ClassSync = 1;
-                console.log("Class sync is true");
             }
 
             var Editing = 0;
             if (editing){
                 Editing = 1;
-                console.log("Editing is true");
             }
 
             //get users timtable
@@ -440,8 +456,6 @@ export namespace Database {
             await Connection.query('UPDATE users SET editable = ? WHERE username = ?', [Editing, owner], (err:any, results:any) => {
                 if (err) {
                     console.log(err);
-                } else {
-                    console.log("Editing set to 1");
                 }
             });
 
@@ -449,8 +463,6 @@ export namespace Database {
             await Connection.query('UPDATE timetable SET ausgange = ?, studien = ?, class_sync = ? WHERE owner = ?', [ausgange, studien, ClassSync, owner], (err:any, results:any) => {
                 if (err) {
                     console.log(err);
-                } else {
-                    console.log("Timetable updated");
                 }
             });
             
@@ -476,6 +488,8 @@ export namespace Database {
                 );
             });
         }
+
+        
 
     }
 
@@ -568,13 +582,63 @@ export namespace Database {
             });
         }
 
-        export async function Create(formteacher: string, title: string, ausgange: string, studien: number, editing: number) {
+        export async function GetTimeSettings(class_title: string) {
             return new Promise((resolve, reject) => {
-                Connection.query('INSERT INTO classes (formteacher, title, ausgange, studien, editing) VALUES (?, ?, ?, ?, ?)', [formteacher, title, ausgange, studien, editing], (err:any, results:any) => {
+                Connection.query('SELECT * FROM sutotoggles WHERE class = ?', [class_title], (err:any, results:any) => {
                     if (err) {
                         reject(err);
                     } else {
-                        resolve(results.insertId);
+                        resolve(results[0]);
+                    }
+                });
+            });
+        }
+
+        export async function SetTimeSettings(class_title: string, enableday: number, enabletime: string, disableday: number, disabletime: string) {
+            return new Promise((resolve, reject) => {
+                Connection.query('UPDATE sutotoggles SET enableday = ?, enabletime = ?, disableday = ?, disabletime = ? WHERE class = ?', [enableday, enabletime, disableday, disabletime, class_title], (err:any, results:any) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(results);
+                    }
+                }
+                );
+            });
+        }
+
+        export async function Create(formteacher: string, title: string, ausgange: string, studien: number, editing: number) {
+            return new Promise((resolve, reject) => {
+                Connection.beginTransaction((err: any) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        Connection.query('INSERT INTO classes (formteacher, title, ausgange, studien, editing) VALUES (?, ?, ?, ?, ?)', [formteacher, title, ausgange, studien, editing], (err: any, results: any) => {
+                            if (err) {
+                                Connection.rollback(() => {
+                                    reject(err);
+                                });
+                            } else {
+                                const classId = results.insertId;
+                                Connection.query('INSERT INTO sutotoggles (id, class) VALUES (NULL, ?)', [classId], (err: any) => {
+                                    if (err) {
+                                        Connection.rollback(() => {
+                                            reject(err);
+                                        });
+                                    } else {
+                                        Connection.commit((err: any) => {
+                                            if (err) {
+                                                Connection.rollback(() => {
+                                                    reject(err);
+                                                });
+                                            } else {
+                                                resolve(classId);
+                                            }
+                                        });
+                                    }
+                                });
+                            }
+                        });
                     }
                 });
             });
@@ -647,54 +711,82 @@ export namespace Database {
                     }
                 });
             });
+        }
 
+        export async function SetEditing(class_title: string, enableEditing: boolean) {
+            // Set class editing
+            const editingValue = enableEditing ? 1 : 0;
+            await Connection.query('UPDATE classes SET editing = ? WHERE title = ?', [editingValue, class_title]);
+
+            console.log("Set editing for class " + class_title + " to " + editingValue);
+    
+            // Get all students from class
+            const students = await GetStudents(class_title) as string[];
+    
+            // Set editing for all students
+            for (const student of students) {
+                const studentData = await User.GetByUsername(student) as any;
+                await User.SetEditing(studentData.username, enableEditing);
+            }
         }
 
         //on Deleting schoolclass, go through all users with this class assigned and set their class to the last class created. if there is only one class left, dont delete it
         export async function Delete(class_title: string) {
             //get all users from class, not only students, but everyone. use sql query
-            Connection.query('SELECT * FROM users WHERE class = ?', [class_title], (err:any, results:any) => {
+            Connection.beginTransaction((err: any) => {
                 if (err) {
                     console.log(err);
                 } else {
-                    //get the number of classes
-                    Connection.query('SELECT COUNT(*) FROM classes', (err:any, results:any) => {
+                    Connection.query('SELECT * FROM users WHERE class = ?', [class_title], (err: any) => {
                         if (err) {
                             console.log(err);
+                            Connection.rollback();
                         } else {
-                            //if there is only one class left, dont delete it
-                            if (results[0]['COUNT(*)'] == 1) {
-                                console.log("There is only one class left, dont delete it");
-                            } else {
-                               //delete the class
-                                 Connection.query('DELETE FROM classes WHERE title = ?', [class_title], (err:any, results:any) => {
-                                    if (err) {
-                                        console.log(err);
+                            //get the number of classes
+                            Connection.query('SELECT COUNT(*) FROM classes', (err: any, results: any) => {
+                                if (err) {
+                                    console.log(err);
+                                    Connection.rollback();
+                                } else {
+                                    //if there is only one class left, dont delete it
+                                    if (results[0]['COUNT(*)'] == 1) {
+                                        console.log("There is only one class left, dont delete it");
+                                        Connection.rollback();
                                     } else {
-                                        //get the latest class from the database
-                                        Connection.query('SELECT * FROM classes ORDER BY id DESC LIMIT 1', (err:any, results:any) => {
+                                        //delete the class
+                                        Connection.query('DELETE FROM classes WHERE title = ?', [class_title], (err: any) => {
                                             if (err) {
                                                 console.log(err);
+                                                Connection.rollback();
                                             } else {
-                                                //go through all users and set their class to the last class created
-                                                for (var i = 0; i < results.length; i++) {
-                                                    Connection.query('UPDATE users SET class = ? WHERE class = ?', [results[0].title, class_title], (err:any, results:any) => {
-                                                        if (err) {
-                                                            console.log(err);
-                                                        } else {
-                                                            return Routine.MkInfo("Class deleted");
+                                                //get the latest class from the database
+                                                Connection.query('SELECT * FROM classes ORDER BY id DESC LIMIT 1', (err: any, results: any) => {
+                                                    if (err) {
+                                                        console.log(err);
+                                                        Connection.rollback();
+                                                    } else {
+                                                        //go through all users and set their class to the last class created
+                                                        for (var i = 0; i < results.length; i++) {
+                                                            Connection.query('UPDATE users SET class = ? WHERE class = ?', [results[0].title, class_title], (err: any) => {
+                                                                if (err) {
+                                                                    console.log(err);
+                                                                    Connection.rollback();
+                                                                }
+                                                            });
                                                         }
-                                                    });
-                                                }
+                                                        Connection.commit();
+                                                    }
+                                                });
                                             }
                                         });
                                     }
-                                });
-                            }
+                                }
+                            });
                         }
                     });
                 }
             });
+            
         }
 
     }
@@ -831,7 +923,6 @@ export namespace Database {
             if (classStudentsList == null)
                 classStudentsList = [];
             let students = [];
-            console.log(classStudentsList);
             for (let i = 0; i < classStudentsList.length; i++)
                 students.push(await Serializer.SerializeUserPreview(classStudentsList[i]));
             let formtecher_preview = await Serializer.SerializeUserPreview(schoolclass.formteacher) as any;
@@ -841,7 +932,8 @@ export namespace Database {
                 ausgange: schoolclass.ausgange,
                 studien: schoolclass.studien,
                 editing: schoolclass.editing,
-                students: students
+                students: students,
+                timing: await SchoolClass.GetTimeSettings(sclass)
             };
         }
 
@@ -1031,9 +1123,6 @@ export namespace Database {
         return runtimeInfo;
     }
 
-
-
-    
     //Calculate stats: total users, total classes, total students, total teachers,
     export async function CalculateStats() {
         var Users = await User.GetAll() as any;

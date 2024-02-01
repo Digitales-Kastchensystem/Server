@@ -61,6 +61,7 @@ router.post('/auth/login', (req, res) => {
             res.json(Core.Database.Routine.MkError('Benuztername oder Passwort falsch!', 512));
         }
     }).catch((err) => {
+        console.log(err);
         res.json(Core.Database.Routine.MkError("An error occured while logging in!"));
     });
 });
@@ -328,6 +329,21 @@ router.post('/class/update', (req, res) => {
     let outings = req.body.class.Outings;
     let editing = req.body.class.Editing;
 
+    let EnableDay = req.body.timesettings.EnableDay;
+    let EnableUnit = req.body.timesettings.EnableUnit;
+    let DisableDay = req.body.timesettings.DisableDay;
+    let DisableUnit = req.body.timesettings.DisableUnit;
+
+    if (EnableDay === undefined || EnableUnit === undefined || DisableDay === undefined || DisableUnit === undefined) {
+        res.json(Core.Database.Routine.MkError("Not all fields are filled!"));
+        return;
+    }
+
+    if (token === undefined || class_title === undefined || formteacher_username === undefined || StudyHours === undefined || outings === undefined || editing === undefined) {
+        res.json(Core.Database.Routine.MkError("Not all fields are filled!"));
+        return;
+    }
+
     Core.Database.User.GetByToken(token).then((foundUser: { type: string, username: string }) => {
         if (!foundUser) {
             res.json(Core.Database.Routine.MkError("Invalid token!", 401));
@@ -338,11 +354,14 @@ router.post('/class/update', (req, res) => {
             res.json(Core.Database.Routine.MkError("You are not authorized to update this class!", 401));
             return;
         }
-        //if class_title is not set, return error
+
         if (!class_title) {
             res.json(Core.Database.Routine.MkError("Class title is not set!"));
             return;
         }
+
+        //if class_title is not set, return error
+        /*
 
         //console.log(req.body);
 
@@ -358,18 +377,26 @@ router.post('/class/update', (req, res) => {
                 res.json(Core.Database.Routine.MkError("An error occurred while updating class!"));
             });
         }
+        */
 
         Core.Database.SchoolClass.Update(class_title, formteacher_username, StudyHours, outings, editing).then(async (result) => {
             let ClassStudents = await Core.Database.SchoolClass.GetStudents(class_title) as any[];
-            try{
-                for (let i = 0; i < ClassStudents.length; i++) {
-                    Core.Database.TimeTable.UpdateAusgangeStudien(ClassStudents[i], outings, StudyHours, true);
-                    Core.Database.TimeTable.ToggleEditable(ClassStudents[i], editing);
+            Core.Database.SchoolClass.SetTimeSettings(class_title, EnableDay, EnableUnit, DisableDay, DisableUnit).then((result) => {
+                try{
+                    for (let i = 0; i < ClassStudents.length; i++) {
+                        Core.Database.TimeTable.UpdateAusgangeStudien(ClassStudents[i], outings, StudyHours, true);
+                        Core.Database.TimeTable.ToggleEditable(ClassStudents[i], editing);
+                    }
+                }catch(err){
+                    ClassStudents = [];
                 }
-            }catch(err){
-                ClassStudents = [];
-            }
-            res.json(result);
+                res.json(result);
+
+            }).catch((err) => {
+                console.error(err);
+                res.json(Core.Database.Routine.MkError("An error occurred while updating class!"));
+            });
+
         }).catch((err) => {
             console.error(err);
             res.json(Core.Database.Routine.MkError("An error occurred while updating class!"));

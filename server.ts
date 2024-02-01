@@ -3,12 +3,13 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const fs = require('fs');
 
-import Surreal from "surrealdb.js";
+
 import *  as Core from "./Database";
 import { loadConfig, Config } from "./Config";
 import { router } from './Router';
 import { Log } from './Log';
 import { Mail } from './Mail';
+import { CheckClassStatesLoop } from './TimingUtils';
 
 const app = express();
 app.use(cors());
@@ -36,9 +37,10 @@ if(!loadConfig(config_file)) {
 if(Mail.Init()) Log("Initialized mail transporter");
 
 
-Core.Database.Connect(Config.db.host, Config.db.port, Config.db.username, Config.db.password, Config.db.database).then((db) => {
+Core.Database.Connect(Config.db.host, Config.db.port, Config.db.username, Config.db.password, Config.db.database).then(async(db) => {
     Log('Connected to database!');
     Core.Database.Connection = db;
+    await CheckClassStatesLoop();
     app.listen(Config.port, Config.interface, () => {
         Log(`Listening on ${Config.interface}:${Config.port}`); 
     });
