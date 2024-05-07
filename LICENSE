@@ -1,0 +1,32 @@
+SOFTWARE LICENSE AGREEMENT FOR DIGITALES KÄSTCHENSYSTEM
+
+1. Preamble
+This Software License Agreement ("Agreement") is entered into between Nikolay Dikov e.U. ("Licensor"), and the user ("Licensee") of the Digitales Kästchensystem software ("Software"). The Software includes an admin web interface, a user web interface, and a server API to manage digital time tables in schools.
+
+2. Copyright and Ownership
+The Software was developed by Maxim Dikov. All interface UI/UX designs and icons distributed with the Software are the intellectual property of Nikolay Dikov. The source code is owned by Nikolay Dikov and is distributed under the name of his company, Nikolay Dikov e.U.
+
+3. Grant of License
+a. The Licensor grants the Licensee a non-exclusive, non-transferable, and revocable license to download, install, and use the Software for personal, non-commercial use only.
+b. The Licensee is permitted to commit changes to the Software's repository on GitHub for the purposes of contributing to the development of the Software, subject to the terms of this Agreement.
+
+4. Restrictions
+a. The Licensee shall not sell, redistribute, rent, lease, sublicense, or otherwise commercially exploit the Software or any part of it.
+b. The Licensee is not permitted to modify, merge, or create derivative works based on the Software for any commercial purpose.
+c. The Licensee must not remove, obscure, or alter any copyright notices displayed in or on the Software.
+
+5. No Warranty
+The Software is provided 'as is', with no warranties whatsoever, including, without limitation, any warranty of merchantability or fitness for a particular purpose. The entire risk arising out of use or performance of the Software remains with the Licensee.
+
+6. Limitation of Liability
+In no event shall the Licensor be liable for any incidental, special, indirect, or consequential damages whatsoever, including, without limitation, damages for loss of profits, business interruption, or loss of information arising out of the use of or inability to use the Software, even if the Licensor has been advised of the possibility of such damages.
+
+7. Termination
+This Agreement is effective until terminated. The Licensee may terminate it at any time by destroying all copies of the Software in their possession or control. The Licensor may terminate this Agreement immediately upon notice to the Licensee if the Licensee violates any of the terms and conditions of this Agreement. Upon termination, the Licensee must destroy all copies of the Software.
+
+8. General Provisions
+This Agreement shall be governed by the laws of Respublic os Austria and European Union, without regard to its conflict of law provisions. If for any reason a court of competent jurisdiction finds any provision, or portion thereof, to be unenforceable, the remainder of this Agreement shall continue in full force and effect.
+
+This Agreement constitutes the entire agreement between the parties with respect to the use of the Software licensed hereunder and supersedes all prior or contemporaneous understandings regarding such subject matter.
+
+By downloading, installing, or using the Software or it's source code, the Licensee acknowledges that they have read this Agreement, understand it, and agree to be bound by its terms and conditions.
