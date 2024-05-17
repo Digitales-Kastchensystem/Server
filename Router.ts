@@ -6,44 +6,22 @@ import {Config, SerializeSchoolPerview } from "./Config";
 import { Log, ApiLog } from './Log';
 import * as Core from "./Database";
 import { Mail } from './Mail';
-import { rateLimit } from 'express-rate-limit'
-
-// API Routes
-
-const apiAuthLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100,
-    standardHeaders: 'draft-7', // draft-6: RateLimit-* headers; draft-7: combined RateLimit header
-	legacyHeaders: false, // X-RateLimit-* headers
-});
-
-const apiMailLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 10,
-    standardHeaders: 'draft-7', // draft-6: RateLimit-* headers; draft-7: combined RateLimit header
-    legacyHeaders: false, // X-RateLimit-* headers
-});
-
-//on all /auth/* routes, use apiLimiter
-router.use('/auth/*', apiAuthLimiter);
-//on all /auth/sendreset
-router.use('/auth/sendreset', apiMailLimiter);
 
 // POST /api/school/info
 router.post('/school/info', (req, res) => {
-    ApiLog('/school/info', req.ip);
+    ApiLog('/school/info', req.connection.remoteAddress);
     res.json(SerializeSchoolPerview());
 });
 
 // GET /api/school/info
 router.get('/school/info', (req, res) => {
-    ApiLog('/school/info', req.ip);
+    ApiLog('/school/info', req.connection.remoteAddress);
     res.json(SerializeSchoolPerview());
 });
 
 // GET /api/school/logo
 router.get('/school/logo', (req, res) => {
-    ApiLog('/school/logo', req.ip);
+    ApiLog('/school/logo', req.connection.remoteAddress);
     res.sendFile(__dirname + '/public/' + Config.school.school_logo);
 });
 
@@ -53,7 +31,7 @@ router.get('/school/logo', (req, res) => {
 
 // POST /auth/login
 router.post('/auth/login', (req, res) => {
-    ApiLog('/auth/login', req.ip);
+    ApiLog('/auth/login', req.connection.remoteAddress);
     Core.Database.Auth(req.body.username, req.body.password).then((result) => {
         if (result) {
             res.json(result);
@@ -68,7 +46,7 @@ router.post('/auth/login', (req, res) => {
 
 //POST /class/list
 router.post('/class/list', (req, res) => {
-    ApiLog('/class/list', req.ip);
+    ApiLog('/class/list', req.connection.remoteAddress);
     let token = req.body.token;
     Core.Database.User.GetByToken(token).then((user) => {
         if (!user) {
@@ -90,7 +68,7 @@ router.post('/class/list', (req, res) => {
 
 //POST /users/list
 router.post('/users/list', (req, res) => {
-    ApiLog('/users/list', req.ip);
+    ApiLog('/users/list', req.connection.remoteAddress);
     let token = req.body.token;
     Core.Database.User.GetByToken(token).then((user) => {
         if (!user) {
@@ -132,7 +110,7 @@ export async function CreateUser(username, first_name, last_name, password, emai
 */
 
 router.post('/users/create', (req, res) => {
-    ApiLog('/users/create', req.ip);
+    ApiLog('/users/create', req.connection.remoteAddress);
     let token = req.body.token;
     let user = req.body.user as any; // Use 'as any' assertion here
     
@@ -179,7 +157,7 @@ router.post('/users/create', (req, res) => {
 
 //POST /user/get
 router.post('/user/get', (req, res) => {
-    ApiLog('/user/get', req.ip);
+    ApiLog('/user/get', req.connection.remoteAddress);
     let token = req.body.token;
     let username = req.body.username;
     Core.Database.User.GetByToken(token).then((user : { type: string, username: string }) => {
@@ -210,7 +188,7 @@ router.post('/user/get', (req, res) => {
 
 //POST /user/update
 router.post('/user/update', async(req, res) => {
-    ApiLog('/user/update', req.ip);
+    ApiLog('/user/update', req.connection.remoteAddress);
     let token = req.body.token;
     let user = req.body.user as any; // Use 'as any' assertion here
     Core.Database.User.GetByToken(token).then(async (foundUser: { type: string, username: string }) => {
@@ -257,7 +235,7 @@ router.post('/user/update', async(req, res) => {
 
 //POST /user/update-password
 router.post('/user/update-password', (req, res) => {
-    ApiLog('/user/update-password', req.ip);
+    ApiLog('/user/update-password', req.connection.remoteAddress);
     let token = req.body.token;
     let username = req.body.username;
     let password = req.body.password;
@@ -290,7 +268,7 @@ router.post('/user/update-password', (req, res) => {
 
 //POST /class/get
 router.post('/class/get', (req, res) => {
-    ApiLog('/class/get', req.ip);
+    ApiLog('/class/get', req.connection.remoteAddress);
     let token = req.body.token;
     let title = req.body.class_title;
     Core.Database.User.GetByToken(token).then((user : { type: string, username: string, class: string }) => {
@@ -321,7 +299,7 @@ router.post('/class/get', (req, res) => {
 
 //post /class/update update class.formteacher_username, class.StudyHours is class.studien and class.outings is class.ausgange
 router.post('/class/update', (req, res) => {
-    ApiLog('/class/update', req.ip);
+    ApiLog('/class/update', req.connection.remoteAddress);
     let token = req.body.token;
     let class_title = req.body.class.class_title;
     let formteacher_username = req.body.class.formteacher_username;
@@ -410,7 +388,7 @@ router.post('/class/update', (req, res) => {
 
 //POST /user/timetable/get
 router.post('/user/timetable/get', (req, res) => {
-    ApiLog('/user/timetable/get', req.ip);
+    ApiLog('/user/timetable/get', req.connection.remoteAddress);
     let token = req.body.token;
     let username = req.body.username;
     Core.Database.User.GetByToken(token).then((user : { type: string, username: string }) => {
@@ -452,7 +430,7 @@ router.post('/user/timetable/edit', (req, res) => {
     ////console.log(req.body);
     
     //return;
-    ApiLog('/user/timetable/edit', req.ip);
+    ApiLog('/user/timetable/edit', req.connection.remoteAddress);
     
     //get raw timtable and print it
     //Core.Database.TimeTable.GetRawByOwner
@@ -503,7 +481,7 @@ router.post('/user/timetable/edit', (req, res) => {
 
 //POST /user/delete Only admin can delete users
 router.post('/user/delete', (req, res) => {
-    ApiLog('/user/delete', req.ip);
+    ApiLog('/user/delete', req.connection.remoteAddress);
     let token = req.body.token;
     let username = req.body.username;
     Core.Database.User.GetByToken(token).then((foundUser: { type: string, username: string }) => {
@@ -537,7 +515,7 @@ router.post('/user/delete', (req, res) => {
 
 //POST /class/delete Only admin can delete classes
 router.post('/class/delete', (req, res) => {
-    ApiLog('/class/delete', req.ip);
+    ApiLog('/class/delete', req.connection.remoteAddress);
     let token = req.body.token;
     let class_title = req.body.class_title;
     Core.Database.User.GetByToken(token).then((foundUser: { type: string, username: string }) => {
@@ -569,7 +547,7 @@ router.post('/class/delete', (req, res) => {
 
 //POST /class/create Only admin can create classes
 router.post('/class/create', (req, res) => {
-    ApiLog('/class/create', req.ip);
+    ApiLog('/class/create', req.connection.remoteAddress);
     let token = req.body.token;
     let class_title = req.body.class.class_title;
     let formteacher_username = req.body.class.formteacher_username;
@@ -606,7 +584,7 @@ router.post('/class/create', (req, res) => {
 
 //POST /user/timetable/setup. this endpoint sets user editing, studien and ausgange and clas sync
 router.post('/user/timetable/setup', (req, res) => {
-    ApiLog('/user/timetable/setup', req.ip);
+    ApiLog('/user/timetable/setup', req.connection.remoteAddress);
     let token = req.body.token;
     let username = req.body.username;
     let editing = req.body.editing;
@@ -646,7 +624,7 @@ router.post('/user/timetable/setup', (req, res) => {
 
 //POST /auth/logout
 router.post('/auth/logout', (req, res) => {
-    ApiLog('/auth/logout', req.ip);
+    ApiLog('/auth/logout', req.connection.remoteAddress);
     //console.log(req.body);
     let token = req.body.token;
     Core.Database.User.GetByToken(token).then((user) => {
@@ -669,7 +647,7 @@ router.post('/auth/logout', (req, res) => {
 
 //POST /timetable/settings
 router.post('/timetable/settings', (req, res) => {
-    ApiLog('/timetable/settings', req.ip);
+    ApiLog('/timetable/settings', req.connection.remoteAddress);
     let token = req.body.token;
     let schoolclass = req.body.class;
     //if username is teacher or admin, or username is a student of the class, return Database.Serializer.SerializeTimeTableSettings
@@ -694,7 +672,7 @@ router.post('/timetable/DailyTimeTable', (req, res) => {
     let dayindex = req.body.dayindex;
     let schoolclass = req.body.class;
     //console.log(req.body);
-    ApiLog('/timetable/DailyTimeTable', req.ip);
+    ApiLog('/timetable/DailyTimeTable', req.connection.remoteAddress);
     //only admin and teacher can get timetable of a class
     Core.Database.User.GetByToken(token).then((user : { type: string, username: string, class: string }) => {
         if (!user) {
@@ -713,7 +691,7 @@ router.post('/timetable/DailyTimeTable', (req, res) => {
 
 //POST /auth/token
 router.post('/auth/token', (req, res) => {
-    ApiLog('/auth/token', req.ip);
+    ApiLog('/auth/token', req.connection.remoteAddress);
     let token = req.body.token;
     Core.Database.AuthByToken(token).then((result) => {
         res.json(result);
@@ -724,7 +702,7 @@ router.post('/auth/token', (req, res) => {
 
 //POST /auth/sendreset
 router.post('/auth/sendreset', (req, res) => {
-    ApiLog('/auth/sendreset', req.ip);
+    ApiLog('/auth/sendreset', req.connection.remoteAddress);
     let username = req.body.username;
     Core.Database.User.GetByUsername(username).then((user : { username: string }) => {
         if (!user) {
@@ -745,7 +723,7 @@ router.post('/auth/sendreset', (req, res) => {
 
 //POST /auth/reset
 router.post('/auth/checkreset', (req, res) => {
-    ApiLog('/auth/checkreset', req.ip);
+    ApiLog('/auth/checkreset', req.connection.remoteAddress);
     let username = req.body.username;
     let code = req.body.code;
     Mail.CheckReset(username, code).then((result:any) => {
@@ -761,7 +739,7 @@ router.post('/auth/checkreset', (req, res) => {
 
 //POST /auth/resetpassword
 router.post('/auth/resetpassword', async(req, res) => {
-    ApiLog('/auth/resetpassword', req.ip);
+    ApiLog('/auth/resetpassword', req.connection.remoteAddress);
     let username = req.body.username;
     let code = req.body.code;
     let password = req.body.password;
@@ -781,7 +759,7 @@ router.post('/auth/resetpassword', async(req, res) => {
 
 //POST /auth/createtmpuser
 router.post('/auth/createtmpuser', (req, res) => {
-    ApiLog('/auth/createtmpuser', req.ip);
+    ApiLog('/auth/createtmpuser', req.connection.remoteAddress);
     let email = req.body.email;
     //get regex for tmp user email
     let regex = new RegExp(Config.substitute.email_regex);
@@ -797,10 +775,39 @@ router.post('/auth/createtmpuser', (req, res) => {
     });
 });
 
+//POST /class/gettimetables
+router.post('/class/gettimetables', (req, res) => {
+    ApiLog('/class/gettimetables', req.connection.remoteAddress);
+
+    let token = req.body.token;
+    let class_title = req.body.class_title;
+
+    Core.Database.User.GetByToken(token).then(async (user : any) => {
+        if (!user) {
+            res.json(Core.Database.Routine.MkError("Invalid token!", 401));
+            return;
+        }
+
+        //get all class's students
+        let students = await Core.Database.SchoolClass.GetStudents(class_title) as any[];
+
+        let studentdatas = [] as any[];
+        for (let i = 0; i < students.length; i++) {
+            let timetable = await Core.Database.Serializer.SerializeStudentTimeTable(students[i]) as any;
+            studentdatas.push(timetable);
+        }
+
+        res.json(studentdatas);
+
+    }).catch((err) => {
+        res.json(Core.Database.Routine.MkError("An error occured while getting class stats!"));
+    });
+
+});
 
 //post /getstats
 router.post('/getstats', (req, res) => {
-    ApiLog('/getstats', req.ip);
+    ApiLog('/getstats', req.connection.remoteAddress);
     let token = req.body.token;
     //console.log(req.body);
     Core.Database.User.GetByToken(token).then((user : { type: string, username: string }) => {

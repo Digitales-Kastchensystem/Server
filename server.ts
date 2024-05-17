@@ -9,7 +9,6 @@ import { loadConfig, Config } from "./Config";
 import { router } from './Router';
 import { Log } from './Log';
 import { Mail } from './Mail';
-import { CheckClassStatesLoop } from './TimingUtils';
 
 const app = express();
 app.use(cors());
@@ -40,7 +39,6 @@ if(Mail.Init()) Log("Initialized mail transporter");
 Core.Database.Connect(Config.db.host, Config.db.port, Config.db.username, Config.db.password, Config.db.database).then(async(db) => {
     Log('Connected to database!');
     Core.Database.Connection = db;
-    await CheckClassStatesLoop();
     app.listen(Config.port, Config.interface, () => {
         Log(`Listening on ${Config.interface}:${Config.port}`); 
     });
