@@ -9,8 +9,10 @@ install-deps:
 	@npm i --save-dev @types/node
 build:
 	@npm run build
-	@cp config.cfg build/config.cfg
-	@cp TimeTableConfig.json build/TimeTableConfig.json
-	@cp -r public build/public
-	@echo "#!/bin/bash" > build/start.sh
-	@echo "node ./server.js" > build/start.sh
+	@rm -rf build
+	@mkdir build
+	@cp -r ./kastchensystem-server ./build
+	@cp -r ./public ./build
+	@cp TimeTableConfig.json ./build
+	@cp config.cfg ./build
+	@echo "Build complete"

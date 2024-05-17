@@ -4,16 +4,17 @@
   "description": "Server für digitales Kästchensystem",
   "main": "server.ts",
   "scripts": {
-    "start": "ts-node server.ts",
+    "start": "bun run server.ts",
     "docs": "typedoc --out ./docs --excludeExternals --excludePrivate ./*.ts",
-    "build": "tsc && cp config.cfg build/config.cfg && cp TimeTableConfig.json build/TimeTableConfig.json"
+    "build": "bun build --compile --target=bun-windows-x64 server.ts --outfile kastchensystem-server.exe",
+    "build-linux": "bun build --compile --target=bun-linux-x64 server.ts --outfile kastchensystem-server"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Digitales-Kastchensystem/Server.git"
   },
-  "author": "Maxim Dikov",
-  "license": "UNLICENSED",
+  "author": "Maxim Dikov, Nikolay Dikov e.u.",
+  "license": "CUSTOM",
   "bugs": {
     "url": "https://github.com/Digitales-Kastchensystem/Server/issues"
   },
@@ -38,7 +39,7 @@
     "@types/nodemailer": "^6.4.9",
     "@types/sha256": "^0.2.0",
     "i": "^0.3.7",
-    "npm": "^9.8.1",
+    "npm": "^10.8.0",
     "typedoc": "^0.24.6"
   }
 }

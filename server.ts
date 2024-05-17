@@ -9,10 +9,6 @@ import { router } from './Router';
 import { Log } from './Log';
 import { Mail } from './Mail';
 
-Log('Digitales Kästchensystem Server v3.4.8 (Cryptographically reinforced edition)');
-Log('© 2021 - 2024 Dikov (Created by Maxim Dikov, designed by Nikolay Dikov)');
-Log('Copying, modifying and redistributing this software with commercial purposes is strictly prohibited! (See LICENSE file for more information)');
-
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
@@ -26,7 +22,7 @@ if (process.argv.length > 2) {
     config_file = process.argv[2];
 }
 
-Log(`Loading config file ${config_file}`);
+
 
 if (!fs.existsSync(config_file)) {
     Log(`Config file ${config_file} does not exist!`, 'ERROR');
@@ -37,6 +33,11 @@ if(!loadConfig(config_file)) {
     Log(`Error loading config file ${config_file}!`, 'ERROR');
     process.exit(1);
 }
+
+Log('Digitales Kästchensystem Server v3.4.8 (Cryptographically reinforced edition)');
+Log('© 2021 - 2024 Dikov (Created by Maxim Dikov, designed by Nikolay Dikov)');
+Log('Copying, modifying and redistributing this software with commercial purposes is strictly prohibited! (See LICENSE file for more information)');
+
 if(Mail.Init()) Log("Initialized mail transporter");
 
 

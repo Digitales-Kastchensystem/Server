@@ -3,7 +3,7 @@ import { Router, Request, Response } from 'express';
 export const router = Router();
 
 import {Config, SerializeSchoolPerview } from "./Config";
-import { Log, ApiLog } from './Log';
+import { Log, ApiLog, Error } from './Log';
 import * as Core from "./Database";
 import { Mail } from './Mail';
 
@@ -39,7 +39,7 @@ router.post('/auth/login', (req, res) => {
             res.json(Core.Database.Routine.MkError('Benuztername oder Passwort falsch!', 512));
         }
     }).catch((err) => {
-        console.log(err);
+        Error(err);
         res.json(Core.Database.Routine.MkError("An error occured while logging in!"));
     });
 });
@@ -58,11 +58,11 @@ router.post('/class/list', (req, res) => {
         }
         ).catch((err) => {
             res.json(Core.Database.Routine.MkError("An error occured while getting classes!"));
-            console.error(err);
+            Error(err);
         });
     }).catch((err) => {
         res.json(Core.Database.Routine.MkError("An error occured while getting classes!"));
-        console.error(err);
+        Error(err);
     });
 });
 
@@ -79,11 +79,11 @@ router.post('/users/list', (req, res) => {
             res.json(users);
         }
         ).catch((err) => {
-            console.error(err);
+            Error(err);
             res.json(Core.Database.Routine.MkError("An error occured while getting users!"));
         });
     }).catch((err) => {
-        console.error(err);
+        Error(err);
         res.json(Core.Database.Routine.MkError("An error occured while getting users!"));
     });
 });
@@ -139,18 +139,18 @@ router.post('/users/create', (req, res) => {
                 return;
             }
         }).catch((err) => {
-            console.error(err);
+            Error(err);
             res.json(Core.Database.Routine.MkError("An error occurred while creating user!"));
         });
 
         Core.Database.User.Create(user.username, user.email, user.first_name, user.last_name, user.last_change, 0, 1, user.type, user.class_title, user.password).then((result) => {
             res.json(result);
         }).catch((err) => {
-            console.error(err);
+            Error(err);
             res.json(Core.Database.Routine.MkError("An error occurred while creating user!"));
         });
     }).catch((err) => {
-        console.error(err);
+        Error(err);
         res.json(Core.Database.Routine.MkError("An error occurred while creating user!"));
     });
 });
@@ -178,11 +178,11 @@ router.post('/user/get', (req, res) => {
             res.json(user);
         }).catch((err) => {
             res.json(Core.Database.Routine.MkError("An error occured while getting user!"));
-            console.error(err);
+            Error(err);
         });
     }).catch((err) => {
         res.json(Core.Database.Routine.MkError("An error occured while getting user!"));
-        console.error(err);
+        Error(err);
     });
 });
 
@@ -224,11 +224,11 @@ router.post('/user/update', async(req, res) => {
             if (OldUser.type !== user.type) await Core.Database.User.SetType(user.username, user.type);
             res.json(result);
         }).catch((err) => {
-            console.error(err);
+            Error(err);
             res.json(Core.Database.Routine.MkError("An error occurred while updating user!"));
         }); 
     }).catch((err) => {
-        console.error(err);
+        Error(err);
         res.json(Core.Database.Routine.MkError("An error occurred while updating user!"));
     });
 });
@@ -257,11 +257,11 @@ router.post('/user/update-password', (req, res) => {
         Core.Database.User.SetPassword(username, password).then((result) => {
             res.json(result);
         }).catch((err) => {
-            console.error(err);
+            Error(err);
             res.json(Core.Database.Routine.MkError("An error occurred while updating user!"));
         });
     }).catch((err) => {
-        console.error(err);
+        Error(err);
         res.json(Core.Database.Routine.MkError("An error occurred while updating user!"));
     });
 });
@@ -289,11 +289,11 @@ router.post('/class/get', (req, res) => {
             res.json(classData);
         }).catch((err) => {
             res.json(Core.Database.Routine.MkError("An error occured while getting class!"));
-            console.error(err);
+            Error(err);
         });
     }).catch((err) => {
         res.json(Core.Database.Routine.MkError("An error occured while getting class!"));
-        console.error(err);
+        Error(err);
     });
 });
 
@@ -351,7 +351,7 @@ router.post('/class/update', (req, res) => {
                     return;
                 }
             }).catch((err) => {
-                console.error(err);
+                Error(err);
                 res.json(Core.Database.Routine.MkError("An error occurred while updating class!"));
             });
         }
@@ -371,16 +371,16 @@ router.post('/class/update', (req, res) => {
                 res.json(result);
 
             }).catch((err) => {
-                console.error(err);
+                Error(err);
                 res.json(Core.Database.Routine.MkError("An error occurred while updating class!"));
             });
 
         }).catch((err) => {
-            console.error(err);
+            Error(err);
             res.json(Core.Database.Routine.MkError("An error occurred while updating class!"));
         });
     }).catch((err) => {
-        console.error(err);
+        Error(err);
         res.json(Core.Database.Routine.MkError("An error occurred while updating class!"));
     });
 });
@@ -409,11 +409,11 @@ router.post('/user/timetable/get', (req, res) => {
             res.json(timetable);
         }).catch((err) => {
             res.json(Core.Database.Routine.MkError("An error occured while getting user's timetable!"));
-            console.error(err);
+            Error(err);
         });
     }).catch((err) => {
         res.json(Core.Database.Routine.MkError("An error occured while getting user's timetable!"));
-        console.error(err);
+        Error(err);
     });
 });
 
@@ -466,15 +466,15 @@ router.post('/user/timetable/edit', (req, res) => {
                 res.json(result);
             }).catch((err) => {
                 res.json(Core.Database.Routine.MkError("An error occured while editing user's timetable!"));
-                console.error(err);
+                Error(err);
             });
         }).catch((err) => {
             res.json(Core.Database.Routine.MkError("An error occured while editing user's timetable!"));
-            console.error(err);
+            Error(err);
         });
     }).catch((err) => {
         res.json(Core.Database.Routine.MkError("An error occured while editing user's timetable!"));
-        console.error(err);
+        Error(err);
     });
     
 });
@@ -503,11 +503,11 @@ router.post('/user/delete', (req, res) => {
         Core.Database.User.DeleteUser(username).then((result) => {
             res.json({});
         }).catch((err) => {
-            console.error(err);
+            Error(err);
             res.json(Core.Database.Routine.MkError("An error occurred while deleting user!"));
         });
     }).catch((err) => {
-        console.error(err);
+        Error(err);
         res.json(Core.Database.Routine.MkError("An error occurred while deleting user!"));
     });
 });
@@ -536,11 +536,11 @@ router.post('/class/delete', (req, res) => {
         Core.Database.SchoolClass.Delete(class_title).then((result) => {
             res.json({});
         }).catch((err) => {
-            console.error(err);
+            Error(err);
             res.json(Core.Database.Routine.MkError("An error occurred while deleting class!"));
         });
     }).catch((err) => {
-        console.error(err);
+        Error(err);
         res.json(Core.Database.Routine.MkError("An error occurred while deleting class!"));
     });
 });
@@ -573,11 +573,11 @@ router.post('/class/create', (req, res) => {
         Core.Database.SchoolClass.Create(formteacher_username, class_title, StudyHours, outings, editing).then(async (result) => {
             await Core.Database.User.ChengeUserClass(formteacher_username, class_title);
         }).catch((err) => {
-            console.error(err);
+            Error(err);
             res.json(Core.Database.Routine.MkError("An error occurred while creating class!"));
         });
     }).catch((err) => {
-        console.error(err);
+        Error(err);
         res.json(Core.Database.Routine.MkError("An error occurred while creating class!"));
     });
 });
@@ -612,11 +612,11 @@ router.post('/user/timetable/setup', (req, res) => {
         Core.Database.TimeTable.SetupTimetable(username, studien, ausgange, class_sync, editing).then((result) => {
             res.json({});
         }).catch((err) => {
-            console.error(err);
+            Error(err);
             res.json(Core.Database.Routine.MkError("An error occurred while updating user's timetable!"));
         });
     }).catch((err) => {
-        console.error(err);
+        Error(err);
         res.json(Core.Database.Routine.MkError("An error occurred while updating user's timetable!"));
     });
 });
@@ -637,11 +637,11 @@ router.post('/auth/logout', (req, res) => {
             res.json(result);
         }).catch((err) => {
             res.json(Core.Database.Routine.MkError("An error occured while logging out!"));
-            console.error(err);
+            Error(err);
         });
     }).catch((err) => {
         res.json(Core.Database.Routine.MkError("An error occured while logging out!"));
-        console.error(err);
+        Error(err);
     });
 });
 
@@ -800,7 +800,7 @@ router.post('/class/gettimetables', (req, res) => {
         res.json(studentdatas);
 
     }).catch((err) => {
-        console.error(err);
+        Error(err);
         res.json(Core.Database.Routine.MkError("An error occured while getting class stats!"));
     });
 

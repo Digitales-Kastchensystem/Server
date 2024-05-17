@@ -50,8 +50,8 @@ export var Config = {
     },
     info:{
         Software: 'Digitales Kästchensystem Server',
-        Version: '3.0.15 beta',
-        Build: '03/09/2023',
+        Version: 'v3.4.8',
+        Build: '17.05.2024',
     },
     log: {
         log_file: 'ks_server.log',
