@@ -800,6 +800,7 @@ router.post('/class/gettimetables', (req, res) => {
         res.json(studentdatas);
 
     }).catch((err) => {
+        console.error(err);
         res.json(Core.Database.Routine.MkError("An error occured while getting class stats!"));
     });
 
