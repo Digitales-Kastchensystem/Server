@@ -4,6 +4,7 @@ import { ApiLog, Log } from './Log';
 import {TimeTableRoutine}  from './TimeTable';
 import { Config, TimeTableConfig } from './Config';
 import os from 'os';
+import { decrypt, encrypt } from './CryptoUtils';
 
 
 export namespace Database {
@@ -85,7 +86,21 @@ export namespace Database {
                         if (results.length == 0) {
                             resolve(null);
                         } else {
-                            resolve(results[0]);
+                            //every column is encrypted, except username
+                            resolve({
+                                id: results[0].id,
+                                username: results[0].username,
+                                email: decrypt(results[0].email, results[0].username),
+                                first_name: decrypt(results[0].first_name, results[0].username),
+                                last_name: decrypt(results[0].last_name, results[0].username),
+                                last_change: results[0].last_change,
+                                editable: results[0].editable,
+                                colorful: results[0].colorful,
+                                type: results[0].type,
+                                class: results[0].class,
+                                password: results[0].password,
+                                token: results[0].token
+                            });
                         }
                     }
                 });
@@ -102,7 +117,22 @@ export namespace Database {
                         if (results.length == 0) {
                             resolve(null);
                         } else {
-                            resolve(results[0]);
+                            resolve(
+                                {
+                                    id: results[0].id,
+                                    username: results[0].username,
+                                    email: decrypt(results[0].email, results[0].username),
+                                    first_name: decrypt(results[0].first_name, results[0].username),
+                                    last_name: decrypt(results[0].last_name, results[0].username),
+                                    last_change: results[0].last_change,
+                                    editable: results[0].editable,
+                                    colorful: results[0].colorful,
+                                    type: results[0].type,
+                                    class: results[0].class,
+                                    password: results[0].password,
+                                    token: results[0].token
+                                }
+                            );
                         }
                     }
                 });
@@ -112,7 +142,7 @@ export namespace Database {
         //this function returns array of usernames of all users
         export async function GetAll() {
             return new Promise((resolve, reject) => {
-                Connection.query('SELECT username FROM users ORDER BY last_name ASC', (err:any, results:any) => {
+                Connection.query('SELECT username FROM users ORDER BY id ASC', (err:any, results:any) => {
                     if (err) {
                         reject(err);
                     } else {
@@ -175,7 +205,20 @@ export namespace Database {
                             if (user.token == "" || user.token == null) {
                                 resolve(null);
                             } else {
-                                resolve(user);
+                                resolve({
+                                    id: user.id,
+                                    username: user.username,
+                                    email: decrypt(user.email, user.username),
+                                    first_name: decrypt(user.first_name, user.username),
+                                    last_name: decrypt(user.last_name, user.username),
+                                    last_change: user.last_change,
+                                    editable: user.editable,
+                                    colorful: user.colorful,
+                                    type: user.type,
+                                    class: user.class,
+                                    password: user.password,
+                                    token: user.token
+                                });
                             }
                         }
                     }
@@ -190,6 +233,11 @@ export namespace Database {
                 var StudentClass = await SchoolClass.GetByTitle(class_title) as any;
                 var StudentTimeTable = await TimeTable.Create(username, JSON.stringify(TimeTableRoutine.MakeBlankTimeTable()), StudentClass.ausgange, StudentClass.studien, 0);
             }
+
+            //encrypt email, first_name, last_name
+            email = encrypt(email, username);
+            first_name = encrypt(first_name, username);
+            last_name = encrypt(last_name, username);
             
             return new Promise((resolve, reject) => {
                 Connection.query('INSERT INTO users (username, email, first_name, last_name, last_change, editable, colorful, type, class, password) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [username, email, first_name, last_name, "", editable, colorful, type, class_title, password], (err:any, results:any) => {
@@ -216,6 +264,12 @@ export namespace Database {
 
         //update student information
         export async function Update(username: string, email: string, first_name: string, last_name: string, last_change: string, editable: string, colorful: string) {
+           
+            //encrypt email, first_name, last_name
+            email = encrypt(email, username);
+            first_name = encrypt(first_name, username);
+            last_name = encrypt(last_name, username);
+
             return new Promise((resolve, reject) => {
                 Connection.query('UPDATE users SET email = ?, first_name = ?, last_name = ?, last_change = ?, editable = ?, colorful = ? WHERE username = ?', [email, first_name, last_name, last_change, editable, colorful, username], (err:any, results:any) => {
                     if (err) {
@@ -277,6 +331,7 @@ export namespace Database {
             var user = await User.GetByUsername(username) as any;
             var class_title = user.class;
             if (type == 'student') {
+                //FIXME: unused code. should be used to create timetable for student
                 var StudentClass = await SchoolClass.GetByTitle(class_title) as any;
                 var StudentTimeTable = await TimeTable.Create(username, JSON.stringify(TimeTableRoutine.MakeBlankTimeTable()), StudentClass.ausgange, StudentClass.studien, 0);
             }
@@ -647,12 +702,12 @@ export namespace Database {
         //get all students from a class as array of usernames
         export async function GetStudents(class_title: string) {
             return new Promise((resolve, reject) => {
-                Connection.query('SELECT * FROM users WHERE type = "student" AND class = ? ORDER BY last_name ASC', [class_title], (err:any, results:any) => {
+                Connection.query('SELECT username FROM users WHERE type = "student" AND class = ? ORDER BY last_name ASC', [class_title], (err:any, results:any) => {
                     if (err) {
                         reject(err);
                     } else {
                         if (results.length == 0) {
-                            resolve(null);
+                            resolve(new Array());
                         } else {
                             var students = [];
                             for (var i = 0; i < results.length; i++) {
