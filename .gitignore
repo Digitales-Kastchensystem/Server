@@ -138,3 +138,6 @@ dist
 # ./docs do not include
 docs
 config.cfg
+
+*.exe
+./logs
